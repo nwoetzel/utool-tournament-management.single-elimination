@@ -1,0 +1,15 @@
+<resources>
+
+    <style name="AppTheme" parent="android:Theme.Light" />
+    
+    <style name="TitleBar">
+		<item name="android:background">#000000</item>
+    </style>
+    
+    <style name="UTooLTheme" parent="android:Theme">
+    	<item name="android:windowTitleSize">60dip</item>
+        <item name="android:windowTitleBackgroundStyle">@style/TitleBar</item>
+    </style>
+
+</resources>
+

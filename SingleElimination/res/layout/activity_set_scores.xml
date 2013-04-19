@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/Black"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/ss_roundMatchLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:paddingTop="5px"
+        android:text="Round X : Match X"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@color/Blue"
+        android:textSize="45px"
+        android:typeface="normal" />
+
+    <TextView
+        android:id="@+id/timerLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ss_roundMatchLabel"
+        android:layout_centerHorizontal="true"
+        android:paddingTop="5px"
+        android:text="X:XX"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@color/White"
+        android:textSize="45px"
+        android:typeface="normal" />
+
+    <EditText
+        android:id="@+id/playerOneScoreField"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/timerLabel"
+        android:layout_centerHorizontal="true"
+        android:background="@color/White"
+        android:ems="10"
+        android:inputType="number"
+        android:paddingBottom="5px"
+        android:paddingTop="5px"
+        android:textSize="35px"
+        android:width="150px" >
+
+        <requestFocus />
+    </EditText>
+
+    <TextView
+        android:id="@+id/playerOneLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/playerOneScoreField"
+        android:layout_alignBottom="@+id/playerOneScoreField"
+        android:layout_marginRight="5px"
+        android:layout_toLeftOf="@+id/playerOneScoreField"
+        android:text="Player 1"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/White"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+    <Button
+        android:id="@+id/playerOnePlusBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/playerOneScoreField"
+        android:layout_toRightOf="@+id/playerOneLabel"
+        android:background="@android:drawable/btn_default"
+        android:maxHeight="50dip"
+        android:maxWidth="50dip"
+        android:minHeight="50dip"
+        android:minWidth="50dip"
+        android:text="+"
+        android:textSize="45px" />
+
+    <Button
+        android:id="@+id/playerOneMinusBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/playerOneScoreField"
+        android:layout_toRightOf="@+id/playerOnePlusBtn"
+        android:background="@android:drawable/btn_default"
+        android:maxHeight="50dip"
+        android:maxWidth="50dip"
+        android:minHeight="50dip"
+        android:minWidth="50dip"
+        android:text="-"
+        android:textSize="45px" />
+
+    <ImageView
+        android:id="@+id/playerOneImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/playerOneMinusBtn"
+        android:layout_alignRight="@+id/ss_roundMatchLabel"
+        android:layout_alignTop="@+id/playerOneScoreField"
+        android:layout_marginLeft="5px"
+        android:layout_toRightOf="@+id/playerOneScoreField"
+        android:minWidth="150px"
+        android:src="@drawable/silhouette" />
+
+    <EditText
+        android:id="@+id/playerTwoScoreField"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/playerOnePlusBtn"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40px"
+        android:background="@color/White"
+        android:ems="10"
+        android:inputType="number"
+        android:paddingBottom="5px"
+        android:paddingTop="5px"
+        android:textSize="35px"
+        android:typeface="normal"
+        android:width="150px" />
+
+    <Button
+        android:id="@+id/playerTwoPlusBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/playerTwoScoreField"
+        android:layout_below="@+id/playerTwoScoreField"
+        android:background="@android:drawable/btn_default"
+        android:height="50dip"
+        android:text="+"
+        android:textSize="45px"
+        android:width="50dip" />
+
+    <Button
+        android:id="@+id/playerTwoMinusBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/playerTwoScoreField"
+        android:layout_toRightOf="@+id/playerTwoPlusBtn"
+        android:background="@android:drawable/btn_default"
+        android:maxHeight="50dip"
+        android:maxWidth="50dip"
+        android:minWidth="50dip"
+        android:text="-"
+        android:textSize="45px" />
+
+    <ImageView
+        android:id="@+id/playerTwoImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/playerTwoMinusBtn"
+        android:layout_alignRight="@+id/ss_roundMatchLabel"
+        android:layout_alignTop="@+id/playerTwoScoreField"
+        android:layout_marginLeft="5px"
+        android:layout_toRightOf="@+id/playerTwoScoreField"
+        android:src="@drawable/silhouette" />
+
+    <Button
+        android:id="@+id/saveBtn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/playerTwoPlusBtn"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10px"
+        android:background="@android:drawable/btn_default"
+        android:text="Save"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+    <Button
+        android:id="@+id/cancelBtn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/saveBtn"
+        android:layout_centerHorizontal="true"
+        android:background="@android:drawable/btn_default"
+        android:text="Cancel"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+    <TextView
+        android:id="@+id/playerTwoLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/playerTwoPlusBtn"
+        android:layout_marginRight="5px"
+        android:layout_toLeftOf="@+id/playerTwoScoreField"
+        android:text="Player 2"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/White"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+</RelativeLayout>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/popup"
+    android:layout_width="300dp"
+    android:layout_height="200dp"
+    android:background="@color/Black"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/popupTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="22dp"
+        android:text="Enter Scores"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@color/White" />
+
+    <Button
+        android:id="@+id/close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:text="Close" />
+
+    <EditText
+        android:id="@+id/playerOneScore"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:background="@color/White"
+        android:ems="10"
+        android:inputType="numberDecimal" />
+
+    <EditText
+        android:id="@+id/playerTwoScore"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/playerOneScore"
+        android:layout_alignBottom="@+id/playerOneScore"
+        android:layout_toRightOf="@+id/popupTitle"
+        android:background="@color/White"
+        android:ems="10"
+        android:inputType="numberDecimal" >
+
+        <requestFocus />
+    </EditText>
+
+    <TextView
+        android:id="@+id/playerOneText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/playerOneScore"
+        android:layout_alignRight="@+id/close"
+        android:layout_marginBottom="17dp"
+        android:text="Player one"
+        android:textColor="@color/White" />
+
+    <Button
+        android:id="@+id/setScoresBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignTop="@+id/close"
+        android:layout_toRightOf="@+id/popupTitle"
+        android:text="Set Scores" />
+
+    <TextView
+        android:id="@+id/playerTwoText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/playerOneText"
+        android:layout_alignBottom="@+id/playerOneText"
+        android:layout_alignLeft="@+id/playerTwoScore"
+        android:text="Player two"
+        android:textColor="@color/White" />
+
+</RelativeLayout>

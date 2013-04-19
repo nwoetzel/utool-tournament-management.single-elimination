@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/st_label"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="10px"
+        android:gravity="center_horizontal"
+        android:text="Set the round timer:"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textSize="30px"
+        android:typeface="normal" />
+
+    <EditText
+        android:id="@+id/st_timeField"
+        android:layout_width="49dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/st_label"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="15px"
+        android:ems="10"
+        android:gravity="center_vertical|center_horizontal"
+        android:inputType="number"
+        android:text="10"
+        android:typeface="normal" >
+
+        <requestFocus />
+    </EditText>
+
+    <CheckBox
+        android:id="@+id/st_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/st_timeField"
+        android:layout_centerHorizontal="true"
+        android:text="Don&apos;t use round timer"
+        android:textSize="25px"
+        android:typeface="normal" />
+
+    <Button
+        android:id="@+id/st_saveBtn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/st_checkbox"
+        android:text="Save"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+    <TextView
+        android:id="@+id/st_minutesLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/st_timeField"
+        android:layout_alignBottom="@+id/st_timeField"
+        android:layout_marginLeft="15px"
+        android:layout_toRightOf="@+id/st_timeField"
+        android:text="minutes"
+        android:textColor="@color/White"
+        android:textSize="25px"
+        android:typeface="normal" />
+
+    <Button
+        android:id="@+id/st_cancelBtn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/st_saveBtn"
+        android:text="Cancel"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+</RelativeLayout>

@@ -1,0 +1,16 @@
+<resources>
+
+    <string name="app_name">Single Elimination</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_matchups">MatchupsActivity</string>
+    <string name="menu_options">Options</string>
+    <color name="Black">#000000</color>
+    <color name="White">#FFFFFF</color>
+    <color name="Blue">#00C3F7</color>
+    <color name="red">#FB0905</color>
+    <color name="ExpandChildBackground">#FFAFABAB</color>
+	<color name="ExpandGroupBackground">#FF7C7C7C</color>
+	<string name="enter_scores">Enter scores</string>
+</resources>

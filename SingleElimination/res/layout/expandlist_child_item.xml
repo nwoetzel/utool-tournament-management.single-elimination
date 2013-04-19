@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="70dip"
+    android:background="@color/ExpandChildBackground"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/tvChild"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/Black"
+        android:textSize="17dip" />
+
+    <Button
+        android:id="@+id/scoresBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Set Scores" />
+
+</LinearLayout>

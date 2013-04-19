@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000" >
+
+    <TextView
+        android:id="@+id/order_by_rank_overall"
+        android:layout_width="wrap_content"
+        android:layout_height="25dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:clickable="true"
+        android:text="Rank"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/order_by_s_overall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:text="   S  "
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/order_by_name_overall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/overall_standings_list"
+        android:layout_marginLeft="14dp"
+        android:layout_toRightOf="@+id/order_by_rank_overall"
+        android:text="Name"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/order_by_l_overall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/overall_standings_list"
+        android:layout_toLeftOf="@+id/order_by_s_overall"
+        android:text="  L  "
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/order_by_w_overall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/overall_standings_list"
+        android:layout_toLeftOf="@+id/order_by_l_overall"
+        android:text="  W  "
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp" />
+
+    <ListView
+        android:id="@+id/overall_standings_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/order_by_rank_overall" >
+    </ListView>
+
+    <RelativeLayout
+        android:id="@+id/frameLayout_wins"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/order_by_s_overall"
+        android:layout_marginRight="18dp"
+        android:layout_marginTop="14dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="158dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="W stands for Round Wins"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/ok_wins"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="30dp"
+            android:layout_below="@+id/textView1"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/frameLayout_overall_column"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/frameLayout_overall"
+        android:layout_alignTop="@+id/frameLayout_wins"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="238dp"
+            android:layout_height="86dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="16dp"
+            android:text="Click on a column header to order the players by that column."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/ok_column"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textView1"
+            android:layout_centerHorizontal="true"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/frameLayout_overall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/frameLayout_wins"
+        android:layout_centerHorizontal="true"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="238dp"
+            android:layout_height="106dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="This screen displays player specific statistics for the tournament."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/ok_screen"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textView1"
+            android:layout_marginLeft="80dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/frameLayout_score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/order_by_s_overall"
+        android:layout_marginRight="18dp"
+        android:layout_marginTop="14dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="158dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="S stands for total Score"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/ok_score"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textView1"
+            android:layout_marginLeft="30dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/frameLayout_losses"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/order_by_s_overall"
+        android:layout_marginRight="18dp"
+        android:layout_marginTop="14dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="158dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="L stands for Round Losses"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/ok_losses"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textView1"
+            android:layout_marginLeft="30dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+</RelativeLayout>

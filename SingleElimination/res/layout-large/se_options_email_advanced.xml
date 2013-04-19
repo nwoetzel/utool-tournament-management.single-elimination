@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:text="Subscribers: "
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#00FFFF" 
+        android:textSize="40sp" />
+
+    <EditText
+        android:id="@+id/email_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/textView1"
+        android:layout_marginRight="10dp"
+        android:layout_toLeftOf="@+id/email_plus"
+        android:hint="Email Address..."
+        android:inputType="textPersonName"
+        android:singleLine="true"
+        android:textSize="30sp" >
+        <requestFocus />
+    </EditText>
+
+    <ListView
+        android:id="@+id/email_subscribers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/adv_save"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/email_address" >
+    </ListView>
+
+
+    <ImageButton
+        android:id="@+id/email_plus"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/textView1"
+        android:background="@android:drawable/ic_input_add" />
+
+    <Button
+        android:id="@+id/adv_save"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:text="Save" />
+
+    <RelativeLayout
+        android:id="@+id/hint1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/email_plus"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/TextView01"
+            android:layout_width="300dp"
+            android:layout_height="180dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="Type in an email address and hit &apos;plus&apos; to add it to the list of tournament subscribers."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/ok_screen1"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/TextView01"
+            android:layout_marginLeft="110dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/hint5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/email_plus"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/TextView02"
+            android:layout_width="300dp"
+            android:layout_height="190dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="Hold an email addresss to get the option to permanently delete it from this list."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/ok_screen5"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/TextView02"
+            android:layout_marginLeft="110dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/hint4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/email_plus"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/TextView02"
+            android:layout_width="300dp"
+            android:layout_height="160dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="Click &apos;Save&apos; to save changes and send the initial updates to new subscribers."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/ok_screen4"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/TextView02"
+            android:layout_marginLeft="110dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/hint3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/email_plus"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/TextView02"
+            android:layout_width="300dp"
+            android:layout_height="230dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="Click on the checkbox next to an email address to subscribe or unsubscribe from the tournament."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/ok_screen3"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/TextView02"
+            android:layout_marginLeft="110dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/hint2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/email_plus"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:background="#333333" >
+
+        <TextView
+            android:id="@+id/TextView02"
+            android:layout_width="300dp"
+            android:layout_height="220dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:text="Tournament subscribers will receive matchup updates each round, and when matchup changes happen."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp" />
+
+        <Button
+            android:id="@+id/ok_screen2"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/TextView02"
+            android:layout_marginLeft="110dp"
+            android:text="Ok" />
+    </RelativeLayout>
+
+</RelativeLayout>

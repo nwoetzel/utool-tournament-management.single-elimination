@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/mu_bracket_bevel" >
+
+    <ImageView
+        android:id="@+id/mu_li_playerOneImage"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/ic_launcher" />
+
+    <ImageView
+        android:id="@+id/mu_li_playerTwoImage"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/mu_li_playerOneImage"
+        android:src="@drawable/ic_launcher" />
+
+    <TextView
+        android:id="@+id/mu_li_playerOneLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/mu_li_playerOneImage"
+        android:layout_marginBottom="15px"
+        android:layout_toRightOf="@+id/mu_li_playerOneImage"
+        android:maxWidth="180px"
+        android:minWidth="180px"
+        android:text="TextView"
+        android:textColor="@color/Black"
+        android:textSize="30px"
+        android:typeface="normal" />
+
+    <TextView
+        android:id="@+id/mu_li_playerTwoLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/mu_li_playerTwoImage"
+        android:layout_marginBottom="15px"
+        android:layout_toRightOf="@+id/mu_li_playerTwoImage"
+        android:maxWidth="180px"
+        android:minWidth="180px"
+        android:text="TextView"
+        android:textColor="@color/Black"
+        android:textSize="30px"
+        android:typeface="normal" />
+
+    <utool.plugin.singleelimination.ResizeTextView
+        android:id="@+id/mu_li_playerOneScore"
+        android:layout_width="30dp"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/mu_li_playerOneLabel"
+        android:layout_marginLeft="2dp"
+        android:layout_toRightOf="@+id/mu_li_playerOneLabel"
+        android:gravity="center"
+        android:text="0"
+        android:textColor="@color/ExpandGroupBackground"
+        android:textSize="30px" />
+
+    <utool.plugin.singleelimination.ResizeTextView
+        android:id="@+id/mu_li_playerTwoScore"
+        android:layout_width="30dp"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/mu_li_playerTwoLabel"
+        android:layout_alignBottom="@+id/mu_li_playerTwoLabel"
+        android:layout_alignLeft="@+id/mu_li_playerOneScore"
+        android:gravity="center"
+        android:text="0"
+        android:textColor="@color/ExpandGroupBackground"
+        android:textSize="30px" />
+
+    <TextView
+        android:id="@+id/mu_li_playerThreeLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="10px"
+        android:paddingRight="10dp"
+        android:text="TextView"
+        android:textColor="@color/ExpandGroupBackground"
+        android:textSize="30px"
+        android:textStyle="bold"
+        android:typeface="normal" />
+
+    <TextView
+        android:id="@+id/mu_li_matchupTagLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:text="TextView"
+        android:visibility="gone" />
+
+</RelativeLayout>

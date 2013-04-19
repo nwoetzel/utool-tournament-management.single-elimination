@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <issue id="HardcodedText">
+        <ignore path="res\layout\activity_standings_round.xml" />
+        <ignore path="res\layout\se_options_layout.xml" />
+        <ignore path="res\layout\standings_overall_row.xml" />
+        <ignore path="res\layout\standings_round_row.xml" />
+    </issue>
+</lint>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffffff"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Player Standings - Round "
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <Spinner
+        android:id="@+id/roundSpinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/title"
+        android:background="#ffffffff" />
+
+    <Button
+        android:id="@+id/doneButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:text="Done" />
+
+    <TableLayout 
+        android:id="@+id/standings_table"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/title"
+        android:layout_above="@+id/doneButton"
+        android:stretchColumns="*" >
+
+        <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/title" >
+
+            <TextView
+                android:id="@+id/r1name"
+                android:layout_span="4"
+                android:text="Player" />
+
+            <TextView
+                android:id="@+id/r1wins"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="Score" />
+
+            <TextView
+                android:id="@+id/r1losses"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="Win-Loss" />
+
+            <TextView
+                android:id="@+id/r1s"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="Place" />
+        </TableRow>
+          <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/title" >
+
+            <TextView
+                android:id="@+id/r2name"
+                android:layout_span="4"
+                android:text="1. Timothy" />
+
+            <TextView
+                android:id="@+id/r2wins"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="5-3" />
+
+            <TextView
+                android:id="@+id/r2losses"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="2-1" />
+
+            <TextView
+                android:id="@+id/r2s"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="2" />
+        </TableRow>
+         <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/title" >
+
+            <TextView
+                android:id="@+id/r4name"
+                android:layout_span="4"
+                android:text="2. Player 43" />
+
+            <TextView
+                android:id="@+id/r4wins"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="31-1" />
+
+            <TextView
+                android:id="@+id/r4losses"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="53-12" />
+
+            <TextView
+                android:id="@+id/r4s"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="22" />
+        </TableRow>
+         <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/title" >
+
+            <TextView
+                android:id="@+id/r3name"
+                android:layout_span="4"
+                android:text="3. Johnathan" />
+
+            <TextView
+                android:id="@+id/r3wins"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="15-0" />
+
+            <TextView
+                android:id="@+id/r3losses"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="3-0" />
+
+            <TextView
+                android:id="@+id/r3s"
+                android:layout_gravity="center_horizontal"
+                android:layout_span="1"
+                android:text="3" />
+        </TableRow>
+
+    
+    </TableLayout>
+
+</RelativeLayout>

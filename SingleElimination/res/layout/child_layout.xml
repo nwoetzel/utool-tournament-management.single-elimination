@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+    
+    <ImageView
+        android:id="@+id/child_background"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/bracket5" />
+
+    <TextView
+        android:id="@+id/player2name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/child_background"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="14dp"
+        android:layout_marginLeft="18dp"
+        android:text="Player 2"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/player1name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/player2name"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="16dp"
+        android:text="Player 1"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF" />
+
+    <EditText
+        android:id="@+id/player1score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/player1name"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="21dp"
+        android:ems="3"
+        android:inputType="numberDecimal"
+        android:text="0.0"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF" />
+
+    <EditText
+        android:id="@+id/player2score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/player2name"
+        android:layout_alignBottom="@+id/player2name"
+        android:layout_alignLeft="@+id/player1score"
+        android:text="0.0"
+        android:ems="3"
+        android:inputType="numberDecimal" 
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/textscore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/player2score"
+        android:layout_alignBottom="@+id/player2score"
+        android:layout_toLeftOf="@+id/player2score"
+        android:text="Score: "
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:textColor="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/textscore2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/player1score"
+        android:layout_alignBottom="@+id/player1score"
+        android:layout_toLeftOf="@+id/player1score"
+        android:text="Score: "
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#FFFFFF" />
+
+    <ImageButton
+        android:id="@+id/checkscore_two"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_alignRight="@+id/player2score"
+        android:layout_alignTop="@+id/textscore"
+        android:src="@drawable/checkmark" />
+
+</RelativeLayout>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mu_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:weightSum="2" >
+
+    <Button
+        android:id="@+id/mu_tournamentNameBtn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Tournament Name"
+        android:textSize="35px"
+        android:typeface="normal" />
+
+    <LinearLayout
+        android:id="@+id/mu_roundButtonsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/mu_tournamentNameBtn"
+        android:orientation="horizontal" >
+
+
+
+
+
+
+        <Button
+            android:id="@+id/mu_roundBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight=".5"
+            android:text="Round X"
+            android:textSize="35px"
+            android:typeface="normal" />
+
+        <Button
+            android:id="@+id/mu_timerBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight=".5"
+            android:text="Set Timer"
+            android:textSize="35px"
+            android:typeface="normal" />
+    </LinearLayout>
+        
+
+    <ListView
+        android:id="@+id/mu_matchupsList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/mu_roundButtonsLayout" >
+
+    </ListView>
+
+    <RelativeLayout
+        android:id="@+id/frameLayout_matchups"
+        android:layout_width="fill_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="25dp"
+        android:background="#333333"
+        android:visibility="invisible" >
+
+        <TextView
+            android:id="@+id/helpText"
+            android:layout_width="250dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:gravity="center_vertical"
+            android:text="Click on a player to swap them."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="25px" />
+
+        <Button
+            android:id="@+id/mu_cancel_swap"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/helpText"
+            android:layout_toRightOf="@+id/helpText"
+            android:text="Cancel" />
+
+    </RelativeLayout>
+    
+        <RelativeLayout
+        android:id="@+id/frameLayout_matchups_add"
+        android:layout_width="fill_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="25dp"
+        android:background="#333333"
+        android:visibility="invisible" >
+
+        <TextView
+            android:id="@+id/add_dialog_label"
+            android:layout_width="250dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentRight="true"
+            android:gravity="center_vertical"
+            android:text="New Player: XXX Select an open slot (or New Matchup) to place them."
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="25px" />
+
+    </RelativeLayout>
+
+</RelativeLayout>
