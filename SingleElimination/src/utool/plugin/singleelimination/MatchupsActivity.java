@@ -1,7 +1,8 @@
 package utool.plugin.singleelimination;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +22,6 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -32,24 +32,26 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.GestureDetector;
-import android.view.Gravity;
+import android.view.GestureDetector.OnGestureListener;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,22 +60,16 @@ import android.widget.Toast;
  * Activity for displaying "Matchups" screen.  
  * @author hoguet
  * 
- * 10-14-12
+ * 4-21-13
  *
  */
-public class MatchupsActivity extends AbstractPluginMainActivity implements GestureDetector.OnGestureListener {
+public class MatchupsActivity extends AbstractPluginMainActivity implements OnGestureListener {
 
 	/**
 	 * Tag used for logging
 	 * @since 10/4/2012
 	 */
 	private static final String LOG_TAG = "utool.plugin.SingleEliminationMainActivity";
-
-
-	/**
-	 * A reference to this activity
-	 */
-	private MatchupsActivity activity = this;
 
 	/**
 	 * Runnable used by thread to receive messages
@@ -95,11 +91,11 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 					SaxFeedParser s;
 					if(tournament.getPermissionLevel() == Player.HOST)
 					{
-						s = new SaxFeedParser(new IncomingCommandHandlerHost(tournament, activity));
+						s = new SaxFeedParser(new IncomingCommandHandlerHost(tournament, tournament.bridge.getMainActivity()));
 					}
 					else
 					{
-						s = new SaxFeedParser(new IncomingCommandHandlerParticipant(tournament, activity));
+						s = new SaxFeedParser(new IncomingCommandHandlerParticipant(tournament, tournament.bridge.getMainActivity()));
 
 					}
 					s.parse(msg);
@@ -107,11 +103,11 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 					//If incoming message is caused by player connecting, notify host appropriately
 					try{
 						PlayerMessage message = new PlayerMessage(msg);
-						
+
 						if(message.getMessageType() == MessageType.PlayerRegister){
 							//Add incoming player(s?) to tournament
 
-							activity.runOnUiThread(new PlayerListRunnable(message.getPlayerList()){
+							tournament.bridge.getMainActivity().runOnUiThread(new PlayerListRunnable(message.getPlayerList()){
 
 								@Override
 								public void run() {
@@ -120,10 +116,10 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 										Toast t;
 										Player connectedAs = retrieveIfContains(tournament.getPlayers(), p);
 										if(connectedAs != null){
-											t = Toast.makeText(activity, "Somebody connected as "+p.getName(), Toast.LENGTH_SHORT);
+											t = Toast.makeText(tournament.bridge.getMainActivity(), "Somebody connected as "+p.getName(), Toast.LENGTH_SHORT);
 											connectedAs.setPermissionsLevel(Player.PARTICIPANT);
 										}else{
-											t = Toast.makeText(activity, p.getName()+" has connected.  To add them to the tournament, go to Edit Tournament.", Toast.LENGTH_SHORT);
+											t = Toast.makeText(tournament.bridge.getMainActivity(), p.getName()+" has connected.  To add them to the tournament, go to Menu -> Edit.", Toast.LENGTH_SHORT);
 											playersConnected.add(p.getUUID()); //save UUID so the permission can get set when/if they are added later
 										}
 										t.show();
@@ -188,9 +184,12 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	/**
 	 * A list of pending players waiting to be added
 	 */
-	private static ArrayList<Player> playersToAdd;
+	private static List<Player> playersToAdd;
 
-	private static ArrayList<UUID> playersConnected = new ArrayList<UUID>();
+	/**
+	 * A list containing the UUIDs of players that connected.  Used for detecting possible candidates for Moderator
+	 */
+	private static List<UUID> playersConnected = new ArrayList<UUID>();
 
 	/**
 	 * A reference to the "New Matchups" footer view which appears when adding players
@@ -206,6 +205,11 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	 * ListView containing the matchups being displayed
 	 */
 	private ListView matchupsList;
+
+	/**
+	 * The adapter for matchupsList
+	 */
+	private MatchupsListAdapter matchupsListAdapter;
 
 	/**
 	 * Save dialog as variable as it will be referenced throughout
@@ -227,11 +231,6 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	 */
 	private int displayedRound;
 
-	/**
-	 * Key for indicating whether screen has been accessed
-	 */
-	private static final String firstTimeKey = "utool.plugin.singleelimination.Matchups";
-
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -239,7 +238,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		super.onCreate(savedInstanceState);
 
 		//Enable debugging for this plugin
-//				android.os.Debug.waitForDebugger();
+//		android.os.Debug.waitForDebugger();
 
 		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
 		setContentView(R.layout.activity_matchups_new);
@@ -249,11 +248,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		titleLabel.setText("Single Elimination");
 
 		//Get parameters through intent
-		if(getIntent().getExtras()!=null)
-		{
-			Log.d(LOG_TAG, "List: "+getPlayerList());
-		}
-		else
+		if(getIntent().getExtras()==null)
 		{
 			//error to user and close plugin
 			AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -263,12 +258,20 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			finish();
 		}
 
-		//set tournament name
-		if(getTournamentName()==null)
-		{
-			setTournamentName("SE: "+ getTournamentId());
+
+
+		//check for added players
+		if(!isNewInstance() && tournament != null && !tournament.isFinished()){
+			compareAndResolvePlayers(getPlayerList());
 		}
 
+	}
+
+	/**
+	 * Initialize elements of the activity
+	 * Called by onServiceConnected because pluginHelper isn't ready at time of onCreate
+	 */
+	private void createStuff(){
 		//Create tournament instances
 		if (isNewInstance())
 		{
@@ -293,7 +296,15 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			tournament = (SingleEliminationTournament)TournamentLogic.getInstance(getTournamentId());
 		}		
 
-		tournament.bridge.setMainActivity(this);
+		try
+		{
+			tournament.bridge.setMainActivity(this);
+		}
+		catch(Exception e)
+		{
+			//this keeps throwing null pointer exception on resume
+			Log.e("SingleElimination Matchups","ERROR:",e);
+		}
 
 		//If host joins and no matchups are made, generate them.
 		if (tournament.getMatchups().size() == 0 && getPermissionLevel() == Player.HOST){
@@ -301,12 +312,12 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			tournament.setMatchups(matchups);
 		}
 
-		footerView = ((LayoutInflater) MatchupsActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.matchup_list_footer, null, false);
+		footerView = ((LayoutInflater) MatchupsActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.matchup_list_footer, null, false);	
 
 		//initialize timer displays and add to it the timer button
 		tournament.addTimerDisplay((Button) findViewById(R.id.mu_timerBtn));
 
-		//Initialize timerhandler; will be used if timer is set.  TODO maybe do this just for host
+		//Initialize timerhandler; will be used if timer is set.
 		timerHandler = new Handler(){
 
 			@Override
@@ -332,19 +343,6 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		//tournament should immediately be started when host reaches this screen
 		if(!tournament.isStarted()){
 			tournament.startTournament();
-		}
-
-		SharedPreferences prefs = this.getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-
-		// use a default value using new Date()
-		Boolean firstTime= prefs.getBoolean(firstTimeKey, true); 
-		if(firstTime)
-		{
-			//			this.setupHelpPopups();
-			showHelp();
-
-			//setup preferences to remember help has been played
-			prefs.edit().putBoolean(firstTimeKey, false).commit();
 		}
 
 		//SELECT DIALOG
@@ -374,9 +372,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 
 					deselectPlayer();
 
-					//go to standings screen
-					Intent i = getNewIntent(MatchupsActivity.this,OverallStandingsActivity.class);
-					startActivity(i);			
+					goToStandings();
 				}
 			}			
 
@@ -389,14 +385,19 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 				@Override
 				public boolean onLongClick(View view) {
 
-					boolean toReturn = homeTournamentsListView_onLongClick(view);
+					if(playersToAdd == null || playersToAdd.isEmpty()){
 
-					//Re-grab tournament in case a new one was created via Restart
-					if(toReturn){
-						tournament = (SingleEliminationTournament)TournamentLogic.getInstance(tournament.getTournamentId());
+						boolean toReturn = homeTournamentsListView_onLongClick(view);
+
+						//Re-grab tournament in case a new one was created via Restart
+						if(toReturn){
+							tournament = (SingleEliminationTournament)TournamentLogic.getInstance(tournament.getTournamentId());
+						}
+
+						return toReturn;
+					}else{
+						return false;
 					}
-
-					return toReturn;
 				}
 
 			});
@@ -405,7 +406,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		//ROUND BUTTON
 		Button roundBtn = (Button) findViewById(R.id.mu_roundBtn);
 
-		roundBtn.setText("Round "+tournament.getRound());
+		roundBtn.setText("Round "+displayedRound);
 
 		roundBtn.setOnClickListener(new OnClickListener(){
 
@@ -415,7 +416,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 				if(playersToAdd == null || playersToAdd.isEmpty()){
 
 					deselectPlayer();
-					goToRoundStandings(tournament.getRound());				
+					goToRoundStandings(displayedRound);				
 				}
 
 			}
@@ -443,7 +444,13 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 
 		//FILL LIST WITH CUR ROUND
 		displayedRound = tournament.getRound();
-		refreshMatchupsList(tournament.getRound(displayedRound), null);
+
+		matchupsList = (ListView) findViewById(R.id.mu_matchupsList);
+		matchupsList.addFooterView(footerView);
+		ArrayList<Matchup> curRound = (getPermissionLevel() == Player.HOST) ? tournament.getRound(displayedRound) : tournament.getRoundParticipant(displayedRound);
+		matchupsListAdapter = new MatchupsListAdapter(this, R.id.mu_matchupsList, curRound);
+		matchupsList.setAdapter(matchupsListAdapter);
+		matchupsList.removeFooterView(footerView);
 
 		matchupsList.setClickable(true);
 
@@ -497,13 +504,19 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 				return false;
 			}
 		});
-
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.round_standings_menu, menu);
+
+		if(playersToAdd == null || playersToAdd.isEmpty()){
+			MenuInflater inflater = getMenuInflater();
+			if(getPermissionLevel() == Player.HOST){
+				inflater.inflate(R.menu.matchups_menu, menu);
+			}else{ //Non-host's menu should only show Help option
+				inflater.inflate(R.menu.round_standings_menu, menu);
+			}
+		}
 		return true;
 	}
 
@@ -513,9 +526,23 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		switch (item.getItemId()) {
 		case R.id.help:
 			showHelp();
+			break;
+		case R.id.edit:
+			handleEdit();
+			break;
+		case R.id.options:
+			goToOptions();
+			break;
+		case R.id.restart:
+			handleRestart();
+			break;
+		case R.id.terminate:
+			handleTerminate();
+			break;
 		default:
-			return super.onOptionsItemSelected(item);
+			break;
 		}
+		return super.onOptionsItemSelected(item);
 	}
 
 
@@ -523,140 +550,56 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	protected void onResume(){
 		super.onResume();
 
-		//refresh round button and tournament name button to reflect changes
-		Button roundBtn = (Button) findViewById(R.id.mu_roundBtn);
-		if(!tournament.isFinished()){
-			roundBtn.setText("Round "+tournament.getRound());
-		}else{
-			roundBtn.setText("Done");
+		if(tournament != null){
+			tournament.bridge.setMainActivity(this);
+			//refresh round button and tournament name button to reflect changes
+			updateRoundDisplay();
+
+			Button tournamentNameBtn = (Button) findViewById(R.id.mu_tournamentNameBtn);
+			tournamentNameBtn.setText(tournament.getTournamentName(false)); //what param?
+
+			refreshMatchupsList(null);
 		}
-
-		Button tournamentNameBtn = (Button) findViewById(R.id.mu_tournamentNameBtn);
-		tournamentNameBtn.setText(tournament.getTournamentName(false)); //what param?
-
-		refreshMatchupsList(tournament.getRound(displayedRound), null);
 	}
 
 	/**
 	 * Reloads the matchups listview with the given matchups
-	 * @param matchups matchups to populate listview with
 	 * @param t expected to be null UNLESS new tournament was created via "Restart"
 	 */
-	public void refreshMatchupsList(ArrayList<Matchup> matchups, SingleEliminationTournament t){
+	public void refreshMatchupsList(SingleEliminationTournament t){
 
 		if(t != null){
 			tournament = t;
 
 			//refresh round button which may have changed if tournament was restarted.
-			Button roundBtn = (Button) findViewById(R.id.mu_roundBtn);
-			roundBtn.setText("Round "+tournament.getRound());
-
+			updateRoundDisplay();
 		}
-
-		if(matchups == null){
-			matchups = tournament.getCurrentRound();
-		}
-
 
 		runOnUiThread(new Runnable(){
 
 			@Override
-			public void run() {
+			public void run() {				
+				ArrayList<Matchup> allMatchups = tournament.getMatchups();
+				ArrayList<Matchup> matchups;
+				if(!allMatchups.isEmpty() && getPermissionLevel() != Player.HOST){
+					matchups = tournament.getRoundParticipant(displayedRound);
+				}else{
+					matchups = tournament.getRound(displayedRound);
+				}
 
-				matchupsList = (ListView) findViewById(R.id.mu_matchupsList);
+				//Sort matchups-to-be-displayed by id so that they appear in a consistent order
+				Collections.sort(matchups, new Comparator<Matchup>(){
+					public int compare(Matchup a, Matchup b){
+						if(a.getId() < b.getId()) return -1;
+						if(a.getId() > b.getId()) return 1;
+						else return 0;
+					}
+				});
 
-				SimpleAdapter adapter = initializeAdapter();
-				adapter.setViewBinder(new MatchupsViewBinder());        
-
-				matchupsList.setAdapter(adapter);
-
+				matchupsListAdapter.setMatchups(matchups);
+				matchupsListAdapter.notifyDataSetChanged();
 			}
-
 		});
-
-	}
-
-
-	/**
-	 * 
-	 * @return the initialized SimpleAdapter with correct content for displayed round
-	 */
-	private SimpleAdapter initializeAdapter(){
-		// create the grid item mapping
-		String[] from = new String[] {
-				"matchupTagLabel",
-				"playerOneLabel", 
-				"playerOneImage", 
-				"playerOneScore", 
-				"playerTwoLabel", 
-				"playerTwoImage", 
-				"playerTwoScore",
-				"winnerLabel"
-		};
-		int[] to = new int[] { 
-				R.id.mu_li_matchupTagLabel,
-				R.id.mu_li_playerOneLabel, 
-				R.id.mu_li_playerOneImage,
-				R.id.mu_li_playerOneScore,
-				R.id.mu_li_playerTwoLabel,
-				R.id.mu_li_playerTwoImage,
-				R.id.mu_li_playerTwoScore,
-				R.id.mu_li_playerThreeLabel};
-
-		//NOTE this makes the matchups param worthless
-		ArrayList<Matchup> matchups;				
-
-		ArrayList<Matchup> allMatchups = tournament.getMatchups();
-		if(!allMatchups.isEmpty() && allMatchups.get(0).getRoundParticipant() > 0){
-			matchups = tournament.getRoundParticipant(displayedRound);
-		}else{
-			matchups = tournament.getRound(displayedRound);
-		}
-
-		// prepare the list of all records
-		List<HashMap<String, Object>> fillMaps = new ArrayList<HashMap<String, Object>>();
-		for(Matchup m : matchups){
-
-			String playerOneScoreString = null;
-			String playerTwoScoreString = null;
-			if(m.getScores() != null){						
-				Double s1 = Double.valueOf(m.getScores()[0]);
-				Double s2 = Double.valueOf(m.getScores()[1]);
-
-				//truncate the decimal if it is 0
-				playerOneScoreString = (s1.doubleValue() == s1.intValue()) ? Integer.toString(s1.intValue()) : Double.toString(s1.doubleValue());
-				playerTwoScoreString = (s2.doubleValue() == s2.intValue()) ? Integer.toString(s2.intValue()) : Double.toString(s2.doubleValue());
-			}
-
-			Bitmap playerOneBmp = BitmapFactory.decodeResource(getResources(), R.drawable.silhouette);
-			if(m.getPlayerOne() != null && m.getPlayerOne().getPortrait() != null){
-				playerOneBmp = m.getPlayerOne().getPortrait();
-			}
-
-			Bitmap playerTwoBmp = BitmapFactory.decodeResource(getResources(), R.drawable.silhouette);
-			if(m.getPlayerTwo() != null && m.getPlayerTwo().getPortrait() != null){
-				playerTwoBmp = m.getPlayerTwo().getPortrait();
-			}
-
-			String winnerLabelString = "";
-			if(m.getWinner() != null){
-				winnerLabelString = m.getWinner().getName();
-			}
-
-
-			HashMap<String, Object> map = new HashMap<String, Object>();
-			map.put("matchupTagLabel", Long.toString(m.getId()));
-			map.put("playerOneLabel", m.getPlayerOne());
-			map.put("playerOneImage", playerOneBmp);
-			map.put("playerOneScore", playerOneScoreString);
-			map.put("playerTwoLabel", m.getPlayerTwo());
-			map.put("playerTwoImage", playerTwoBmp);
-			map.put("playerTwoScore", playerTwoScoreString);
-			map.put("winnerLabel", winnerLabelString);			
-			fillMaps.add(map);
-		}
-
-		return new SimpleAdapter(activity, fillMaps, R.layout.matchup_list_item, from, to);
 	}
 
 	/**
@@ -670,21 +613,18 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			@Override
 			public void run() {
 				Button roundBtn = (Button) findViewById(R.id.mu_roundBtn);
-				if(!tournament.isFinished()){
-					roundBtn.setText("Round "+tournament.getRound());
-				}else{
-					roundBtn.setText("Done");
-				}				
+				roundBtn.setText("Round "+displayedRound);
 			}			
 		});		
 	}
-	
+
 	/**
 	 * Resets displayed round.
 	 * Called when tournament is restarted so that UI doesnt try to retrieve from round that no longer exists.
 	 */
 	public void resetDisplayedRound(){
 		displayedRound = 1;
+		updateRoundDisplay();
 	}
 
 	/**
@@ -797,83 +737,16 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 					String message = "Tournament Name: " + tournament.getTournamentName(false) + "\n\n"
 							+ "Tournament UUID: " + tournament.getTournamentId() + "\n\n"
 							+ "Status: " + statusString;
-					//					if (tournament.getTournamentLocation() == TournamentLocationEnum.RemoteConnected || tournament.getTournamentLocation() == TournamentLocationEnum.RemoteDiscovered){
-					//						message += "\n\n" + "Server: " + tournament.getServerAddress() + ":" + tournament.getServerPort();
-					//					}
 					d.setMessage(message);
 					d.show();
 				} else if (item.equals(edit)){
-					//Go to tournament configuration					
-					Intent i = new Intent();
-					i.setAction("utool.core.intent.TOURNAMENT_CONFIG");
-					i.putExtra("tournamentId", tournament.getTournamentId());
-					startActivityForResult(i, TOURNAMENT_CONFIGURATION_ACTIVITY_REQUEST_CODE);
+					handleEdit();
 				} else if (item.equals(options)){
 					goToOptions();
 				} else if (item.equals(terminate)){
-					tournament.endTournament();
-					//TODO close miCore
-					finish();
+					handleTerminate();
 				} else if (item.equals(restart)){				
-
-					//Restart the tournament by making new set of matchups and resetting rounds/timer
-					ArrayList<Matchup> newMatchups = SingleEliminationTournament.generateRandomMatchups(tournament.getPlayers(), null);
-					long tid = tournament.getTournamentId();
-					String tname = tournament.getTournamentName(false);
-
-					tournament.clearTournament(); //call this before clearing instance so that round timer gets closed properly
-					TournamentLogic.clearInstance(tid);
-					TournamentLogic newT = TournamentLogic.getInstance(tid, tournament.getPlayers(), newMatchups, tournament.getPermissionLevel());
-					if(newT instanceof SingleEliminationTournament){
-
-						tournament = (SingleEliminationTournament) newT;
-						tournament.bridge.setMainActivity(activity);
-						tournament.pid = activity.getPid();
-						tournament.setTournamentName(tname);
-						tournament.startTournament();
-
-						//Reset timer display
-						Button timerBtn = (Button) findViewById(R.id.mu_timerBtn);
-						tournament.addTimerDisplay(timerBtn);			
-						timerBtn.setText("Set Timer"); //this is the textview
-						tournament.getOutgoingCommandHandler().handleSendRoundTimerAmount(tournament.getTournamentId(), "Set Timer");
-
-						//Refresh UI, defaulting to first round
-						resetDisplayedRound();
-						refreshMatchupsList(tournament.getCurrentRound(), tournament);
-
-						//Update participants by clearing and resending players/matchups
-						tournament.getOutgoingCommandHandler().handleSendClear(tid);						
-
-						//send players 
-						Player[] playersToSend = new Player[tournament.getPlayers().size()];
-						for(int i = 0; i < playersToSend.length; i++){
-							playersToSend[i] = tournament.getPlayers().get(i);
-						}
-						tournament.getOutgoingCommandHandler().handleSendPlayers(tid, playersToSend);
-
-						//send matchups
-						for(Matchup m : tournament.getMatchups()){
-							String[] team1 = new String[1];
-							String[] team2 = new String[1];
-
-							team1[0] = "null";
-							if(m.getPlayerOne() != null){
-								team1[0] = m.getPlayerOne().getUUID().toString();
-							}
-
-							team2[0] = "null";
-							if(m.getPlayerTwo() != null){
-								team2[0] = m.getPlayerTwo().getUUID().toString();
-							}
-
-							tournament.getOutgoingCommandHandler().handleSendMatchup(tid, m.getId(), null, null, team1, team2, m.getRound(), null);
-						}
-
-					}else{
-						Log.e("MatchupsActivity", "Something went horribly wrong when restarting tournament.");
-					}
-
+					handleRestart();
 				}
 			}
 
@@ -881,6 +754,95 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		builder.setItems(items, new dialogOnClick(items, tournament));
 		builder.show();
 		return true;
+	}
+
+	/**
+	 * Goes to tournament configuration screen
+	 */
+	private void handleEdit(){
+		//Go to tournament configuration					
+		Intent i = new Intent();
+		i.setAction("utool.core.intent.TOURNAMENT_CONFIG");
+		i.putExtra("tournamentId", tournament.getTournamentId());
+		startActivityForResult(i, TOURNAMENT_CONFIGURATION_ACTIVITY_REQUEST_CODE);
+	}
+
+	/**
+	 * Terminates the tournament
+	 */
+	private void handleTerminate(){
+		tournament.clearTournament();
+		TournamentLogic.clearInstance(tournament.getTournamentId());
+		try{
+			pluginHelper.mICore.close();
+		}catch(Exception e){
+		}
+		finish();
+	}
+
+	/**
+	 * Restarts the tournament; updates UI accordingly.
+	 */
+	private void handleRestart(){
+		//Restart the tournament by making new set of matchups and resetting rounds/timer
+		List<Player> players = tournament.getPlayers();
+		long tid = tournament.getTournamentId();
+		String tname = tournament.getTournamentName(false);
+
+		UUID pid = tournament.pid;
+		tournament.clearTournament(); //call this before clearing instance so that round timer gets closed properly
+		TournamentLogic.clearInstance(tid);
+		TournamentLogic newT = TournamentLogic.getInstance(tid, players, null, tournament.getPermissionLevel());
+		if(newT instanceof SingleEliminationTournament){
+
+			tournament = (SingleEliminationTournament) newT;
+			tournament.setMatchups(SingleEliminationTournament.generateRandomMatchups(players, tournament));
+			tournament.bridge.setMainActivity(this);
+			tournament.pid = pid;
+			tournament.setTournamentName(tname);
+			tournament.startTournament();
+
+			//Reset timer display
+			Button timerBtn = (Button) findViewById(R.id.mu_timerBtn);
+			tournament.addTimerDisplay(timerBtn);			
+			timerBtn.setText("Set Timer"); //this is the textview
+			tournament.getOutgoingCommandHandler().handleSendRoundTimerAmount(tournament.getTournamentId(), "Set Timer");
+
+			//Refresh UI, defaulting to first round
+			resetDisplayedRound();
+			refreshMatchupsList(tournament);
+
+			//Update participants by clearing and resending players/matchups
+			tournament.getOutgoingCommandHandler().handleSendClear(tid);						
+
+			//send players 
+			Player[] playersToSend = new Player[tournament.getPlayers().size()];
+			for(int i = 0; i < playersToSend.length; i++){
+				playersToSend[i] = tournament.getPlayers().get(i);
+			}
+			tournament.getOutgoingCommandHandler().handleSendPlayers(tid, playersToSend);
+
+			//send matchups
+			for(Matchup m : tournament.getMatchups()){
+				String[] team1 = new String[1];
+				String[] team2 = new String[1];
+
+				team1[0] = "null";
+				if(m.getPlayerOne() != null){
+					team1[0] = m.getPlayerOne().getUUID().toString();
+				}
+
+				team2[0] = "null";
+				if(m.getPlayerTwo() != null){
+					team2[0] = m.getPlayerTwo().getUUID().toString();
+				}
+
+				tournament.getOutgoingCommandHandler().handleSendMatchup(tid, m.getId(), null, null, team1, team2, m.getRound(), null);
+			}
+
+		}else{
+			Log.e("MatchupsActivity", "Something went horribly wrong when restarting tournament.");
+		}
 	}
 
 
@@ -923,9 +885,9 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	 * updates the tournament player list to match the new one.
 	 * @param newPlayersList
 	 */
-	public void compareAndResolvePlayers(ArrayList<Player> newPlayersList){
+	public void compareAndResolvePlayers(List<Player> newPlayersList){
 
-		ArrayList<Player> oldPlayersList = tournament.getPlayers();
+		List<Player> oldPlayersList = tournament.getPlayers();
 
 		ArrayList<Player> playersToRemove = new ArrayList<Player>();
 		//go through old players list; if any are missing in new list, remove them
@@ -946,7 +908,8 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		if(!newPlayersList.isEmpty()){
 
 			addDialog.setVisibility(View.VISIBLE);
-			matchupsList.addFooterView(footerView);			
+			matchupsList.addFooterView(footerView);	
+
 			Button button = (Button) footerView.findViewById(R.id.mu_f_button);
 			button.setOnClickListener(new OnClickListener(){
 
@@ -964,14 +927,14 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 
 					tournament.expandBracket(playerToAdd);	
 
-					refreshMatchupsList(tournament.getRound(displayedRound), null);
+					refreshMatchupsList(null);
 
 					if(playersToAdd.isEmpty()){
 						addDialog.setVisibility(View.INVISIBLE);
 						matchupsList.removeFooterView(footerView);
 					}else{
 						TextView addLabel = (TextView) findViewById(R.id.add_dialog_label);
-						addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Click to place them.");	
+						addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Tap to place them.");	
 					}					
 
 				}
@@ -981,13 +944,13 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			playersToAdd = newPlayersList;
 
 			TextView addLabel = (TextView) findViewById(R.id.add_dialog_label);
-			addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Click to place them.");
+			addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Tap to place them.");
 
 		}
 
 		//If removal of players leads to no player vs. player matchups in current round, round should be resolved.
 		//Don't resolve in round 1 because host may expect to be adding players to the empty slots or can restart the tournament.
-		if(tournament.getRound() > 1){
+		if(!playersToRemove.isEmpty() && tournament.getRound() > 1){
 			tournament.resolveCurrentRoundIfDone();
 		}
 	}
@@ -999,7 +962,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	 * @param player to check list for
 	 * @return true if player was removed, false if player was not in list
 	 */
-	private boolean removePlayerIfContains(ArrayList<Player> list, Player player){
+	private boolean removePlayerIfContains(List<Player> list, Player player){
 
 		boolean toReturn = false;
 
@@ -1039,6 +1002,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	{
 		Intent i = getNewIntent(MatchupsActivity.this, OverallStandingsActivity.class);
 		i.putExtra("Final_Standings", true);
+		i.putExtra("ActivePid", getPid().toString());
 		startActivity(i);
 	}
 
@@ -1049,6 +1013,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	public void goToRoundStandings(int round){
 		Intent i = getNewIntent(MatchupsActivity.this, RoundStandingsActivity.class);
 		i.putExtra("Round", round);
+		i.putExtra("ActivePid", getPid().toString());
 		startActivity(i);
 	}
 
@@ -1074,7 +1039,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	 * Displays the help screen
 	 */
 	public void showHelp(){
-		final Dialog dialog = new Dialog(activity);
+		final Dialog dialog = new Dialog(this);
 		dialog.setContentView(R.layout.matchup_help);
 		dialog.setTitle("Matchups Help");
 		dialog.setCancelable(true);
@@ -1123,7 +1088,8 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			if(newMatchupsList == null || newMatchupsList.isEmpty()){
 				displayedRound--; //undo displayedRound increment because it went out of bounds
 			}else{
-				refreshMatchupsList(newMatchupsList, null);
+				updateRoundDisplay();
+				refreshMatchupsList(null);
 			}
 
 			return true;
@@ -1131,15 +1097,8 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 			// left to right swipe
 			if(displayedRound > 1){
 				displayedRound--;
-
-				ArrayList<Matchup> newMatchupsList;
-				if(!tournament.getMatchups().isEmpty() && tournament.getMatchups().get(0).getRoundParticipant() > 0){
-					newMatchupsList = tournament.getRoundParticipant(displayedRound);
-				}else{
-					newMatchupsList = tournament.getRound(displayedRound);
-				}
-
-				refreshMatchupsList(newMatchupsList, null);
+				updateRoundDisplay();
+				refreshMatchupsList(null);
 			}
 
 			return true;
@@ -1174,6 +1133,10 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	@Override
 	public void runOnServiceConnected() {		
 		try {
+
+			createStuff();
+			onResume();
+
 			//create thread to get received messages
 			Log.d(LOG_TAG, "Service connected, isNewInstance=" + isNewInstance());
 
@@ -1200,7 +1163,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 					och.handleSendTournamentName(tournament.getTournamentId(), tournament.getTournamentName(true));
 
 					//send players
-					ArrayList<Player> p = tournament.getPlayers();
+					List<Player> p = tournament.getPlayers();
 					Player[] players = new Player[p.size()];
 					for(int i=0;i<p.size();i++)
 					{
@@ -1254,7 +1217,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		message = s;
 		this.runOnUiThread(new Runnable() {
 			public void run() {
-				Toast.makeText(activity, "Msg: "+message, Toast.LENGTH_LONG).show();
+				Toast.makeText(MatchupsActivity.this, "Msg: "+message, Toast.LENGTH_LONG).show();
 			}
 		});
 
@@ -1271,6 +1234,7 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		for(Player p : list){
 			if(p.getUUID().equals(player.getUUID())){
 				toReturn = p;
+				p.setPortrait(player.getPortrait());
 				break;
 			}
 		}
@@ -1287,28 +1251,13 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 		@Override
 		public void onClick(View arg0) {
 
-			//ON FIRST PRESS, POP UP SET TIMER LAYOUT
-			int popupWidth = 400;
-			int popupHeight = 400;
-
-			// Inflate the scores_popup_layout.xml
-			RelativeLayout viewGroup = (RelativeLayout) findViewById(R.id.popup);
-			LayoutInflater layoutInflater = (LayoutInflater) MatchupsActivity.this
-					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			final View layout = layoutInflater.inflate(R.layout.set_timer_popup, viewGroup);
-
-			// Creating the PopupWindow
-			final PopupWindow popup = new PopupWindow(MatchupsActivity.this);
-			popup.setContentView(layout);
-			popup.setWidth(popupWidth);
-			popup.setHeight(popupHeight);
-			popup.setFocusable(true);
-
-			// Displaying the popup at the specified location, + offsets
-			popup.showAtLocation(layout, Gravity.NO_GRAVITY, 50, 50);
+			final Dialog dialog = new Dialog(MatchupsActivity.this);
+			dialog.setContentView(R.layout.set_timer_popup);
+			dialog.setTitle("Set Timer");
+			dialog.setCancelable(true);
 
 			//Define save button (sets and starts round timer)
-			Button saveBtn = (Button)layout.findViewById(R.id.st_saveBtn);
+			Button saveBtn = (Button)dialog.findViewById(R.id.st_saveBtn);
 			saveBtn.setOnClickListener(new OnClickListener(){
 
 				@Override
@@ -1317,12 +1266,16 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 					int roundDuration = SingleEliminationTournament.CONFIRMED_NO_TIMER;
 
 					//If "no round timer" checkbox is not checked, grab round duration from input field
-					CheckBox checkbox = (CheckBox)layout.findViewById(R.id.st_checkbox);
+					CheckBox checkbox = (CheckBox)dialog.findViewById(R.id.st_checkbox);
 					if(!checkbox.isChecked()){			
 
-						EditText timeField = (EditText)layout.findViewById(R.id.st_timeField);
-						int minutes = Integer.parseInt(timeField.getText().toString());
-						roundDuration = minutes * 60;
+						EditText timeField = (EditText)dialog.findViewById(R.id.st_timeField);
+						try{
+							int minutes = Integer.parseInt(timeField.getText().toString());
+							roundDuration = minutes * 60;
+						} catch (Exception e){
+							roundDuration = 0;
+						}
 
 					}							
 					tournament.setRoundTimer(roundDuration, timerHandler);
@@ -1336,19 +1289,22 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 						tournament.startRoundTimer();
 					}
 
-					popup.dismiss();
+					dialog.dismiss();
 
 				}						
 			});
 
 			//Define cancel button
-			Button cancelBtn = (Button)layout.findViewById(R.id.st_cancelBtn);
+			Button cancelBtn = (Button)dialog.findViewById(R.id.st_cancelBtn);
 			cancelBtn.setOnClickListener(new OnClickListener(){
 				@Override
 				public void onClick(View v) {							
-					popup.dismiss();
+					dialog.dismiss();
 				}						
 			});
+
+
+			dialog.show();
 		}
 	}
 
@@ -1403,211 +1359,277 @@ public class MatchupsActivity extends AbstractPluginMainActivity implements Gest
 	}
 
 	/**
-	 * ViewBinder for the SimpleAdapter that defines on-click and on-long-click behaviors for elements in the main ListView
+	 * Adapter used for populating the main matchups listview
 	 * @author hoguet
 	 *
 	 */
-	private class MatchupsViewBinder implements SimpleAdapter.ViewBinder{
+	private class MatchupsListAdapter extends ArrayAdapter<Matchup>{
+
+		/**
+		 * The matchups associated with this adapter
+		 */
+		private ArrayList<Matchup> matchups;
+
+		/**
+		 * Simple constructor to hide the annoying stuff
+		 * @param context the application context
+		 * @param textViewResourceId the list id
+		 * @param matchups the matchups OF THE ROUND TO BE DISPLAYED
+		 */
+		public MatchupsListAdapter(Context context, int textViewResourceId, ArrayList<Matchup> matchups)
+		{
+			super(context, textViewResourceId, matchups);
+			this.matchups = matchups;
+		}
+
+		/**
+		 * @param matchups OF THE ROUND TO BE DISPLAYED
+		 */
+		public void setMatchups(ArrayList<Matchup> matchups){
+			this.matchups.clear();
+			this.matchups.addAll(matchups);
+		}
 
 		@Override
-		public boolean setViewValue(View view, Object data, String textRepresentation){
-			//Custom handle the player label loadings so that they are long clckable
-			if (view.getId() == R.id.mu_li_playerOneLabel || view.getId() == R.id.mu_li_playerTwoLabel) {
+		public int getCount()
+		{
+			return (matchups == null) ? 0 : matchups.size();
+		}
 
-				TextView playerLabel = (TextView) view;
-				Player player = (Player)data;
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent){
+			
+			View row = convertView;
+			if(row == null){			
+				LayoutInflater inflater = getLayoutInflater();
+				row = inflater.inflate(R.layout.matchup_list_item, parent, false);
+			}
+			
 
-				//Set text based on status of player
-				String playerLabelString = "";
-				if(player != null && player.equals(Player.BYE)){
-					playerLabelString = "BYE";
-				}else if(player != null){
-					playerLabelString = player.getName();
-				}     
+			Matchup m = matchups.get(position);			
+			
+			//MATCHUP TAG LABEL
+			TextView matchupTag = (TextView)row.findViewById(R.id.mu_li_matchupTagLabel);
+			matchupTag.setText(Long.toString(m.getId()));
 
-				//determine the matchup the player belongs to
-				RelativeLayout parent = (RelativeLayout)playerLabel.getParent();
-				TextView matchupTag = (TextView)parent.findViewById(R.id.mu_li_matchupTagLabel);
-				long mid = Long.parseLong(matchupTag.getText().toString());
+			//PLAYER SCORE LABELS
+			TextView playerOneScoreLabel = (TextView)row.findViewById(R.id.mu_li_playerOneScore);
+			TextView playerTwoScoreLabel = (TextView)row.findViewById(R.id.mu_li_playerTwoScore);
 
-				Matchup matchup = null;
-				for(Matchup m : tournament.getMatchups()){
-					if(mid == m.getId()){
-						matchup = m;
-						break;
-					}
-				}
+			String playerOneScoreString = "";
+			String playerTwoScoreString = "";
+			if(m.getScores() != null){						
+				Double s1 = Double.valueOf(m.getScores()[0]);
+				Double s2 = Double.valueOf(m.getScores()[1]);
 
-				playerLabel.setText(playerLabelString);
+				//truncate the decimal if it is 0
+				playerOneScoreString = (s1.doubleValue() == s1.intValue()) ? Integer.toString(s1.intValue()) : Double.toString(s1.doubleValue());
+				playerTwoScoreString = (s2.doubleValue() == s2.intValue()) ? Integer.toString(s2.intValue()) : Double.toString(s2.doubleValue());
+			}
 
-				//Bold the winner's name and score
-				if(matchup != null && matchup.getWinner() != null && matchup.getWinner().equals(player)){
-					playerLabel.setTypeface(null, Typeface.BOLD);
-					if(playerLabel.getId() == R.id.mu_li_playerOneLabel){
-						TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerOneScore);
-						scoreLabel.setTypeface(null, Typeface.BOLD);
-					}else{
-						TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerTwoScore);
-						scoreLabel.setTypeface(null, Typeface.BOLD);
-					}
+			playerOneScoreLabel.setText(playerOneScoreString);
+			playerTwoScoreLabel.setText(playerTwoScoreString);		
+
+			//PLAYER PORTRAITS
+			ImageView playerOnePortrait = (ImageView)row.findViewById(R.id.mu_li_playerOneImage);
+			Bitmap playerOneBmp = BitmapFactory.decodeResource(getResources(), R.drawable.silhouette);
+			if(m.getPlayerOne() != null && m.getPlayerOne().getPortrait() != null){
+				playerOneBmp = m.getPlayerOne().getPortrait();
+			}
+			playerOnePortrait.setImageBitmap(playerOneBmp);
+
+			ImageView playerTwoPortrait = (ImageView)row.findViewById(R.id.mu_li_playerTwoImage);
+			Bitmap playerTwoBmp = BitmapFactory.decodeResource(getResources(), R.drawable.silhouette);
+			if(m.getPlayerTwo() != null && m.getPlayerTwo().getPortrait() != null){
+				playerTwoBmp = m.getPlayerTwo().getPortrait();
+			}
+			playerTwoPortrait.setImageBitmap(playerTwoBmp);
+
+			//WINNER LABEL
+			TextView winnerLabel = (TextView)row.findViewById(R.id.mu_li_playerThreeLabel);
+			String winnerLabelString = (m.getWinner() == null) ? "" : m.getWinner().getName();
+			winnerLabel.setText(winnerLabelString);
+
+			//PLAYER ONE LABEL
+			TextView playerOneLabel = (TextView)row.findViewById(R.id.mu_li_playerOneLabel);
+			initializePlayerLabel(playerOneLabel, m.getPlayerOne(), m);
+
+			//PLAYER TWO LABEL
+			TextView playerTwoLabel = (TextView)row.findViewById(R.id.mu_li_playerTwoLabel);
+			initializePlayerLabel(playerTwoLabel, m.getPlayerTwo(), m);
+
+			return row;
+		}
+
+		/**
+		 * Helper method which assigns player names to their labels and defines click listeners.
+		 * @param playerLabel label to work with
+		 * @param player to assign to the label
+		 * @param matchup that player belongs to
+		 */
+		private void initializePlayerLabel(TextView playerLabel, Player player, Matchup matchup){
+			String playerLabelString = "";
+			if(player != null && player.equals(Player.BYE)){
+				playerLabelString = "BYE";
+			}else if(player != null){
+				playerLabelString = player.getName();
+			}
+			playerLabel.setText(playerLabelString);
+
+			RelativeLayout parent = (RelativeLayout)playerLabel.getParent();
+			//Bold the winner's name and score
+			if(matchup != null && matchup.getWinner() != null && matchup.getWinner().equals(player)){
+				playerLabel.setTypeface(null, Typeface.BOLD);
+				if(playerLabel.getId() == R.id.mu_li_playerOneLabel){
+					TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerOneScore);
+					scoreLabel.setTypeface(null, Typeface.BOLD);
 				}else{
-					playerLabel.setTypeface(null, Typeface.NORMAL);
-					if(playerLabel.getId() == R.id.mu_li_playerOneLabel){
-						TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerOneScore);
-						scoreLabel.setTypeface(null, Typeface.NORMAL);
-					}else{
-						TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerTwoScore);
-						scoreLabel.setTypeface(null, Typeface.NORMAL);
-					}
+					TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerTwoScore);
+					scoreLabel.setTypeface(null, Typeface.BOLD);
 				}
-
-
-				//if player is winner & active player, italicize the winner label
-				//				if(player.getUUID().equals(activity.getPid())){
-				//					
-				//					TextView winnerLabel = (TextView)parent.findViewById(R.id.mu_li_playerThreeLabel);
-				//					winnerLabel.setTypeface(null, Typeface.BOLD_ITALIC);
-				//				}
-
-				//Italicize the active player
-				if(player != null && activity.getPid().equals(player.getUUID())){
-					playerLabel.setTextColor(Color.BLUE);
+			}else{
+				playerLabel.setTypeface(null, Typeface.NORMAL);
+				if(playerLabel.getId() == R.id.mu_li_playerOneLabel){
+					TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerOneScore);
+					scoreLabel.setTypeface(null, Typeface.NORMAL);
 				}else{
-					playerLabel.setTextColor(Color.BLACK);
+					TextView scoreLabel = (TextView)parent.findViewById(R.id.mu_li_playerTwoScore);
+					scoreLabel.setTypeface(null, Typeface.NORMAL);
 				}
+			}
 
-				//Only enable modify matchups for host
-				if(tournament.getPermissionLevel() == Player.HOST){
-					playerLabel.setOnLongClickListener(new PlayerLongClickListener(player, matchup){
+			//Italicize the active player
+			if(player != null && tournament.pid.equals(player.getUUID())){
+				playerLabel.setTextColor(Color.BLUE);
+			}else{
+				playerLabel.setTextColor(Color.BLACK);
+			}
 
-						@Override
-						public boolean onLongClick(View v) {
-
-							//only select player if matchup not already finished.
-							if(getMatchup().getWinner() == null){
-
-								//before selecting this longclicked player, deselect old selection if there was one (check is done by method)
-								deselectPlayer();
-
-								selectDialog.setVisibility(View.VISIBLE);
-								TextView selectDialogText = (TextView) findViewById(R.id.helpText);
-								selectDialogText.setText("Click on another player to swap them.");
-
-								selectedPlayer = getPlayer();
-								selectedMatchup = getMatchup();
-								selectedPlayerLabel = (TextView)v;
-
-								selectedPlayerLabel.setBackgroundColor(getResources().getColor(R.color.Blue));
-								selectedPlayerLabel.setTextColor(getResources().getColor(R.color.White));
-
-							}
-
-							return true;
-						}
-
-					});
-				}
-
-				//Only host or moderator will have use for this listener (used for completing a modify matchups/add player operation or going to set scores screen)
-				playerLabel.setOnClickListener(new PlayerClickListener(player, matchup){
+			//Only enable modify matchups for host
+			if(tournament.getPermissionLevel() == Player.HOST){
+				playerLabel.setOnLongClickListener(new PlayerLongClickListener(player, matchup){
 
 					@Override
-					public void onClick(View v) {
+					public boolean onLongClick(View v) {
 
-						if(tournament.getPermissionLevel() == Player.HOST || tournament.getPermissionLevel() == Player.MODERATOR){
+						//only select player if matchup not already finished and not in middle of adding player.
+						if(getMatchup().getWinner() == null && (playersToAdd == null || playersToAdd.isEmpty())){
 
-							//if selected, perform modify matchups operation
-							if(selectedPlayer != null && selectedPlayerLabel != null){
+							//before selecting this longclicked player, deselect old selection if there was one (check is done by method)
+							deselectPlayer();
 
-								if(getMatchup().getWinner() != null){
-									TextView selectDialogText = (TextView) findViewById(R.id.helpText);
-									selectDialogText.setText("Cannot swap with player from a finished matchup.");
-								}else if(!getPlayer().equals(selectedPlayer)){
+							selectDialog.setVisibility(View.VISIBLE);
+							TextView selectDialogText = (TextView) findViewById(R.id.helpText);
+							selectDialogText.setText("Tap on another player to swap them.");
 
-									Player checkOne = selectedMatchup.swapPlayer(selectedPlayer, getPlayer());
-									Player checkTwo = getMatchup().swapPlayer(getPlayer(), selectedPlayer);
+							selectedPlayer = getPlayer();
+							selectedMatchup = getMatchup();
+							selectedPlayerLabel = (TextView)v;
 
-									if(checkOne == null || checkTwo == null){
-										Log.i("MatchupsActivity", "Error swapping players.");
-									}
+							selectedPlayerLabel.setBackgroundColor(getResources().getColor(R.color.Blue));
+							selectedPlayerLabel.setTextColor(getResources().getColor(R.color.White));
 
-									//If either modified matchup has children, handle them.
-									if(!selectedMatchup.getChildren().isEmpty() || !getMatchup().getChildren().isEmpty()){
-
-										ArrayList<Matchup> childrenToSwap = getMatchup().getChildren();
-
-										getMatchup().setChildren(selectedMatchup.getChildren());
-										selectedMatchup.setChildren(childrenToSwap);
-
-									}
-
-									//After modifying matchups, deselect the player and refresh list
-									deselectPlayer();
-									refreshMatchupsList(tournament.getRound(displayedRound), null);
-
-								}
-
-
-							}else if(playersToAdd != null && !playersToAdd.isEmpty()){
-
-								Player old = getPlayer();								
-
-								//only add player to selected spot if player in spot's id is 'BYE' else this is invalid
-								if(old.getUUID().equals(Player.BYE)){
-
-									//grab top player from playersToAdd list
-									Player playerToAdd = playersToAdd.remove(0);
-
-									for(UUID id : playersConnected){
-										if(playerToAdd.getUUID().equals(id)){
-											playerToAdd.setPermissionsLevel(Player.PARTICIPANT);
-											break;
-										}
-									}
-									tournament.addPlayer(playerToAdd);					
-									getMatchup().swapPlayer(old, playerToAdd);
-									playerToAdd = null;
-
-									refreshMatchupsList(tournament.getRound(displayedRound), null);
-
-									//if there are more players, change the display label else hide add dialog
-									if(playersToAdd.isEmpty()){
-										addDialog.setVisibility(View.INVISIBLE);
-										matchupsList.removeFooterView(footerView);
-									}else{
-										TextView addLabel = (TextView) findViewById(R.id.add_dialog_label);
-										addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Click to place them.");	
-									}
-
-								}else{
-									//change dialog message; invalid target
-									TextView addLabel = (TextView) findViewById(R.id.add_dialog_label);
-									addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Invalid target.");
-								}
-
-							}else{
-
-								//go to the set scores screen
-								if(getMatchup().getPlayerOne() != null && getMatchup().getPlayerTwo() != null
-										&& !getMatchup().getPlayerOne().getUUID().equals(Player.BYE) && !getMatchup().getPlayerTwo().getUUID().equals(Player.BYE)
-										&& tournament.getRound(tournament.getRound()).contains(getMatchup())){
-									goToSetScores(getMatchup());
-								}						
-
-							}
 						}
 
+						return true;
 					}
 
 				});
-
-
-
-				return true; 
 			}
-			return false;
-		}
 
+			//Only host or moderator will have use for this listener (used for completing a modify matchups/add player operation or going to set scores screen)
+			playerLabel.setOnClickListener(new PlayerClickListener(player, matchup){
+
+				@Override
+				public void onClick(View v) {
+
+					if(tournament.getPermissionLevel() == Player.HOST || tournament.getPermissionLevel() == Player.MODERATOR){
+
+						//if selected, perform modify matchups operation
+						if(selectedPlayer != null && selectedPlayerLabel != null){
+
+							if(getMatchup().getWinner() != null){
+								TextView selectDialogText = (TextView) findViewById(R.id.helpText);
+								selectDialogText.setText("Cannot swap with player from a finished matchup.");
+							}else if(!getPlayer().equals(selectedPlayer)){
+
+								Player checkOne = selectedMatchup.swapPlayer(selectedPlayer, getPlayer());
+								Player checkTwo = getMatchup().swapPlayer(getPlayer(), selectedPlayer);
+
+								if(checkOne == null || checkTwo == null){
+									Log.i("MatchupsActivity", "Error swapping players.");
+								}
+
+								//If either modified matchup has children, handle them.
+								if(!selectedMatchup.getChildren().isEmpty() || !getMatchup().getChildren().isEmpty()){
+
+									ArrayList<Matchup> childrenToSwap = getMatchup().getChildren();
+
+									getMatchup().setChildren(selectedMatchup.getChildren());
+									selectedMatchup.setChildren(childrenToSwap);
+
+								}
+
+								//After modifying matchups, deselect the player and refresh list
+								deselectPlayer();
+								refreshMatchupsList(null);
+
+							}
+
+
+						}else if(playersToAdd != null && !playersToAdd.isEmpty()){
+
+							Player old = getPlayer();								
+
+							//only add player to selected spot if player in spot's id is 'BYE' else this is invalid
+							if(old.getUUID().equals(Player.BYE)){
+
+								//grab top player from playersToAdd list
+								Player playerToAdd = playersToAdd.remove(0);
+
+								for(UUID id : playersConnected){
+									if(playerToAdd.getUUID().equals(id)){
+										playerToAdd.setPermissionsLevel(Player.PARTICIPANT);
+										break;
+									}
+								}
+								tournament.addPlayer(playerToAdd);					
+								getMatchup().swapPlayer(old, playerToAdd);
+								playerToAdd = null;
+
+								refreshMatchupsList(null);
+
+								//if there are more players, change the display label else hide add dialog
+								if(playersToAdd.isEmpty()){
+									addDialog.setVisibility(View.INVISIBLE);
+									matchupsList.removeFooterView(footerView);
+								}else{
+									TextView addLabel = (TextView) findViewById(R.id.add_dialog_label);
+									addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Tap to place them.");	
+								}
+
+							}else{
+								//change dialog message; invalid target
+								TextView addLabel = (TextView) findViewById(R.id.add_dialog_label);
+								addLabel.setText("New Player: "+playersToAdd.get(0).getName()+" Invalid target.");
+							}
+
+						}else{
+
+							//go to the set scores screen
+							if(getMatchup().getPlayerOne() != null && getMatchup().getPlayerTwo() != null
+									&& !getMatchup().getPlayerOne().getUUID().equals(Player.BYE) && !getMatchup().getPlayerTwo().getUUID().equals(Player.BYE)
+									&& tournament.getCurrentRound().contains(getMatchup())){
+								goToSetScores(getMatchup());
+							}						
+
+						}
+					}
+
+				}
+
+			});
+		}
 	}
 
 }

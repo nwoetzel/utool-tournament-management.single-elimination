@@ -73,7 +73,7 @@ public class StandingsGeneratorSE
 		for(int i=0;i<players.size();i++)
 		{
 			//add each player to participant list in same order
-			this.participants.add(new Participant(players.get(i).getUUID(), players.get(i).getName()));
+			this.participants.add(new Participant(players.get(i).getUUID(), players.get(i).getName(), players.get(i).getPortrait()));
 		}
 
 		Player[] playz = new Player[players.size()];
@@ -121,7 +121,7 @@ public class StandingsGeneratorSE
 	{
 		Log.e(LOG_TAG,"Player added to list: "+p);
 		
-		Participant par = new Participant(p.getUUID(), p.getName());
+		Participant par = new Participant(p.getUUID(), p.getName(), p.getPortrait());
 		
 		if(!participants.contains(par))
 		{
@@ -504,7 +504,7 @@ public class StandingsGeneratorSE
 		for(int i=0;i<players.size();i++)
 		{
 			//add each player to participant list in same order
-			this.participants.add(new Participant(players.get(i).getUUID(),players.get(i).getName()));
+			this.participants.add(new Participant(players.get(i).getUUID(),players.get(i).getName(),players.get(i).getPortrait()));
 		}
 
 	}

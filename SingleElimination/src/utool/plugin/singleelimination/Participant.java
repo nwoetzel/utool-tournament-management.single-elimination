@@ -3,6 +3,8 @@ package utool.plugin.singleelimination;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import android.graphics.Bitmap;
+
 
 /**
  * This class holds the information for a single participant throughout the SE tournament
@@ -40,19 +42,35 @@ public class Participant
 	 * Stores the name of the participant
 	 */
 	private String name;
-
+	
+	/**
+	 * Portrait of the participant
+	 */
+	private Bitmap portrait;
+	
 	/**
 	 * Creates a participant with the given id and name
 	 * @param id of the player
-	 * @param name nmae of the player
+	 * @param name of the player
 	 */
-	public Participant(UUID id, String name)
+	public Participant(UUID id, String name){
+		this(id, name, null);
+	}
+
+	/**
+	 * Creates a participant with the given id and name and portrait
+	 * @param id of the player
+	 * @param name of the player
+	 * @param portrait of the player
+	 */
+	public Participant(UUID id, String name, Bitmap portrait)
 	{
 		this.id = (id);
 		this.name = name;
 		this.winsPerRound = new ArrayList<Double>();
 		this.lossesPerRound = new ArrayList<Double>();
 		this.rounds  = new ArrayList<Boolean>();
+		this.portrait = portrait;
 	}
 
 	/**
@@ -105,6 +123,14 @@ public class Participant
 	public UUID getId() 
 	{
 		return id;
+	}
+	
+	/**
+	 * Getter for portrait
+	 * @return portrait
+	 */
+	public Bitmap getPortrait(){
+		return portrait;
 	}
 
 	/**

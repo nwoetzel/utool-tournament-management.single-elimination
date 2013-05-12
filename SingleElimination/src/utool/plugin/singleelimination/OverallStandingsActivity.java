@@ -2,10 +2,12 @@ package utool.plugin.singleelimination;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.UUID;
+
 import utool.plugin.activity.AbstractPluginCommonActivity;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,16 +32,15 @@ import android.widget.TextView;
  * This activity is the screen for displaying the players and their 
  * overall standings
  * @author waltzm
- * @version 12/24/2012
+ * @author hoguet
+ * @version 4/21/2013
  */
 public class OverallStandingsActivity extends AbstractPluginCommonActivity
 {
 	/**
 	 * Order the list by the player rank
 	 */
-	public final static int ORDER_BY_RANK = 1;
-	
-	
+	public final static int ORDER_BY_RANK = 1;	
 
 	/**
 	 * Order the list by the player name
@@ -80,17 +81,11 @@ public class OverallStandingsActivity extends AbstractPluginCommonActivity
 	 * Log tag to be used in this class
 	 */
 	private static String logtag = "SE Overall Standings Activity";
-	
-	/**
-	 * Shared preferences key for getting if the screen has been visited before
-	 */
-	String firstTimeKey = "utool.plugin.singleelimination.OverallStandings";
 
 	/**
 	 * Holds the players of the tournament
 	 */
 	private ArrayList<Participant> playerz;
-
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -114,7 +109,8 @@ public class OverallStandingsActivity extends AbstractPluginCommonActivity
 		//order arraylist  by rank ascending
 		ArrayList<Participant> players = this.orderByColumn(ORDER_BY_RANK);
 
-		ad=new OverallStandingsAdapter(this, R.id.overall_standings_list, players);
+		Bundle b = getIntent().getExtras();
+		ad=new OverallStandingsAdapter(this, R.id.overall_standings_list, players, b.getString("ActivePid"));
 		l.setAdapter(ad);
 
 
@@ -124,20 +120,7 @@ public class OverallStandingsActivity extends AbstractPluginCommonActivity
 		findViewById(R.id.frameLayout_score).setVisibility(FrameLayout.INVISIBLE);
 		findViewById(R.id.frameLayout_wins).setVisibility(FrameLayout.INVISIBLE);
 		findViewById(R.id.frameLayout_overall_column).setVisibility(FrameLayout.INVISIBLE);
-
-		//determine if help has been played yet
-		SharedPreferences prefs = this.getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-
-		// use a default value to true (is first time)
-		Boolean firstTime= prefs.getBoolean(firstTimeKey, true); 
-		if(firstTime)
-		{
-			showHelp();
-
-			//setup preferences to remember help has been played
-			prefs.edit().putBoolean(firstTimeKey, false).commit();
-		}
-
+		
 		//Setup ordering of the columns
 		TextView rank = (TextView) findViewById(R.id.order_by_rank_overall);
 		rank.setOnTouchListener(new FakeButtonOnTouchListener());
@@ -513,6 +496,11 @@ public class OverallStandingsActivity extends AbstractPluginCommonActivity
 		 * Holds the list of players
 		 */
 		private ArrayList<Participant> players;
+		
+		/**
+		 * The UUID of the current user
+		 */
+		private UUID activePid;
 
 
 		/**
@@ -520,11 +508,13 @@ public class OverallStandingsActivity extends AbstractPluginCommonActivity
 		 * @param context the application context
 		 * @param textViewResourceId the list id
 		 * @param players the players
+		 * @param activePid the pid of the using player
 		 */
-		public OverallStandingsAdapter(Context context, int textViewResourceId, ArrayList<Participant> players)
+		public OverallStandingsAdapter(Context context, int textViewResourceId, ArrayList<Participant> players, String activePid)
 		{
 			super(context, textViewResourceId, players);
 			this.players = players;
+			this.activePid = UUID.fromString(activePid);
 		}
 
 		@Override
@@ -534,26 +524,36 @@ public class OverallStandingsActivity extends AbstractPluginCommonActivity
 
 			//setup player profile
 			ImageView img = (ImageView)row.findViewById(R.id.prof_pic);
-			img.setImageBitmap(TournamentLogic.getInstance(getTournamentId()).getStandingsGenerator().getPlayers().get(position).getPortrait());
+			Participant p = players.get(position);
+			if(p != null && p.getPortrait() != null){
+				img.setImageBitmap(p.getPortrait());
+			}else{
+				img.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.silhouette));
+			}
 			
 			//setup player information
 
 			TextView rank = (TextView)row.findViewById(R.id.rank_overall);
-			rank.setText(""+players.get(position).getStanding(players.size()));
+			rank.setText(""+p.getStanding(players.size()));
 
 			TextView name = (TextView)row.findViewById(R.id.name_overall);
-			name.setText(""+players.get(position).getName());
+			name.setText(""+p.getName());
+			if(p.getId().equals(activePid)){
+				name.setTextColor(Color.CYAN);
+			}else{
+				name.setTextColor(Color.WHITE);
+			}
 
 			TextView wins = (TextView)row.findViewById(R.id.wins_overall);
-			wins.setText(""+players.get(position).getTotalRoundWins());
+			wins.setText(""+p.getTotalRoundWins());
 
 			TextView losses = (TextView)row.findViewById(R.id.losses_overall);
-			losses.setText(""+players.get(position).getTotalRoundLosses());
+			losses.setText(""+p.getTotalRoundLosses());
 
 			TextView score = (TextView)row.findViewById(R.id.score_overall);
 
 			//get and format text
-			double pts = players.get(position).getTotalWins();
+			double pts = p.getTotalWins();
 			String ptz = pts+"";
 			if(pts == (double)((int)pts))
 			{

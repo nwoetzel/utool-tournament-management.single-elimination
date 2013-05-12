@@ -6,6 +6,8 @@ import utool.plugin.Player;
  * Defines a single match within a round
  * @author waltzm
  * @version 12/3/2012
+ * 
+ * TODO This class could probably be removed and use Matchup instead.
  */
 public class Match 
 {
@@ -29,6 +31,11 @@ public class Match
 	 * Second player in matchup.
 	 */
 	private Player playerTwo;
+	
+	/**
+	 * The winner of the matchup
+	 */
+	private Player winner;
 
 	/**
 	 * Matchup ID.  May not be needed in final version but was added for testing to determine correct assignment of parent matchups.
@@ -47,12 +54,14 @@ public class Match
 	 * @param mid the unique id of the match
 	 * @param one first player
 	 * @param two second player
+	 * @param winner the winner of the matchup
 	 * @param round the round of the match
 	 */
-	public Match(long mid, Player one, Player two, int round)
+	public Match(long mid, Player one, Player two, Player winner, int round)
 	{
 		this.playerOne = one;
 		this.playerTwo = two;	
+		this.winner = winner;
 		this.id = mid;
 		this.round = round;
 
@@ -98,6 +107,13 @@ public class Match
 	 */	
 	public Player getPlayerTwo(){
 		return playerTwo;
+	}
+	
+	/**
+	 * @return winner
+	 */
+	public Player getWinner(){
+		return winner;
 	}
 	
 	/**

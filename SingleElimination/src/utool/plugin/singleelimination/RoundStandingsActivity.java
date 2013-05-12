@@ -5,15 +5,17 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.UUID;
+
 import utool.plugin.Player;
 import utool.plugin.activity.AbstractPluginCommonActivity;
-import utool.plugin.singleelimination.participant.SingleEliminationPartTournament;
 import utool.plugin.singleelimination.participant.Match;
 import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -39,7 +41,8 @@ import android.widget.TextView;
  * 
  * Round should be passed into the extra's, otherwise the default is round 1
  * @author waltzm
- * @version 12/24/2012
+ * @author hoguet
+ * @version 4-21-13
  */
 public class RoundStandingsActivity extends AbstractPluginCommonActivity
 {
@@ -63,11 +66,6 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 	 */
 	private static String playerUndecided = "UNDECIDED";
 
-	/**
-	 * Shared preferences key for getting if the screen has been visited before
-	 */
-	String firstTimeKey = "utool.plugin.singleelimination.RoundStandings";
-
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -85,32 +83,20 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 		ListView l = (ListView)findViewById(R.id.round_standings_list);
 
 		//retrieve matchups
-		int round =getIntent().getExtras().getInt("Round", 1);
+		Bundle b = getIntent().getExtras();
+		int round = b.getInt("Round", 1);
 		ArrayList<Match> matches = this.getMatchupsForRound(round);
 
 		matchez = matches;
 
 		matches = this.orderByMatch();
 
-		ad=new RoundStandingsAdapter(this, R.id.round_standings_list, matches);
+		ad=new RoundStandingsAdapter(this, R.id.round_standings_list, matches, b.getString("ActivePid"));
 		l.setAdapter(ad);
 
 		//hide everything
 		findViewById(R.id.frameLayout_round).setVisibility(FrameLayout.INVISIBLE);
 		findViewById(R.id.frameLayout_round_column).setVisibility(FrameLayout.INVISIBLE);
-		//determine if help has been played yet
-		SharedPreferences prefs = this.getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-
-		// use a default value using new Date()
-		Boolean firstTime= prefs.getBoolean(firstTimeKey, true); 
-		if(firstTime)
-		{
-			showHelp();
-
-			//setup preferences to remember help has been played
-			prefs.edit().putBoolean(firstTimeKey, false).commit();
-		}
-
 
 		//Setup ordering of the columns
 		TextView match = (TextView) findViewById(R.id.order_by_match_round);
@@ -211,7 +197,7 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 						p2=new Player(playerUndecided);
 					}
 
-					Match m = new Match(mu.getId(), p1, p2, round);
+					Match m = new Match(mu.getId(), p1, p2, mu.getWinner(), round);
 					if(mu.getScores()!=null)
 					{
 						m.setScores(mu.getScores()[0], mu.getScores()[1]);
@@ -225,10 +211,6 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 			}
 
 		}
-		//		else
-		//		{
-		//			matches = ((SingleEliminationPartTournament)TournamentLogic.getInstance(getTournamentId())).getMatches(round);
-		//		}
 
 
 		return matches;
@@ -355,17 +337,24 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 		 * Holds the list of matches
 		 */
 		private ArrayList<Match> matches;
+		
+		/**
+		 * UUID of the current user's player
+		 */
+		private UUID activePid;
 
 		/**
 		 * Simple constructor to hide the annoying stuff
 		 * @param context the application context
 		 * @param textViewResourceId the list id
 		 * @param matches the matches
+		 * @param activePid the UUID of the current user's player
 		 */
-		public RoundStandingsAdapter(Context context, int textViewResourceId, ArrayList<Match> matches)
+		public RoundStandingsAdapter(Context context, int textViewResourceId, ArrayList<Match> matches, String activePid)
 		{
 			super(context, textViewResourceId, matches);
 			this.matches = matches;
+			this.activePid = UUID.fromString(activePid);
 		}
 
 		/**
@@ -385,25 +374,53 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 			View row = inflater.inflate(R.layout.standings_round_row, parent, false);
 
 			//setup player pics
+			Match m = matches.get(position);
+			
 			ImageView img1 = (ImageView)row.findViewById(R.id.prof_pic_one);
-			img1.setImageBitmap(matches.get(position).getPlayerOne().getPortrait());
+			Player p = m.getPlayerOne();
+			if(p != null && p.getPortrait() != null){
+				img1.setImageBitmap(p.getPortrait());
+			}else{
+				img1.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.silhouette));
+			}
 
 			ImageView img2 = (ImageView)row.findViewById(R.id.prof_pic_two);
-			img2.setImageBitmap(matches.get(position).getPlayerTwo().getPortrait());
+			p = m.getPlayerTwo();
+			if(p != null && p.getPortrait() != null){
+				img2.setImageBitmap(p.getPortrait());
+			}else{
+				img2.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.silhouette));
+			}
 
 			//setup player information
 			TextView match = (TextView)row.findViewById(R.id.match_round);
-			match.setText(""+matches.get(position).getId());
+			match.setText(""+m.getId());
 
 			TextView p1name = (TextView)row.findViewById(R.id.name_one_round);
-			p1name.setText(""+matches.get(position).getPlayerOne().getName());
+			p1name.setText(""+m.getPlayerOne().getName());
+			if(m.getWinner() != null && m.getWinner().equals(m.getPlayerOne())){
+				p1name.setTypeface(null, Typeface.BOLD);
+			}
+			if(m.getPlayerOne().getUUID().equals(activePid)){
+				p1name.setTextColor(Color.CYAN);
+			}else{
+				p1name.setTextColor(Color.WHITE);
+			}
 
 			TextView p2name = (TextView)row.findViewById(R.id.name_two_round);
-			p2name.setText(""+matches.get(position).getPlayerTwo().getName());
+			p2name.setText(""+m.getPlayerTwo().getName());
+			if(m.getWinner() != null && m.getWinner().equals(m.getPlayerTwo())){
+				p2name.setTypeface(null, Typeface.BOLD);
+			}
+			if(m.getPlayerTwo().getUUID().equals(activePid)){
+				p2name.setTextColor(Color.CYAN);
+			}else{
+				p2name.setTextColor(Color.WHITE);
+			}
 
 			TextView p1score = (TextView)row.findViewById(R.id.score_one_round);			
 			//get and format text
-			double pts1 = matches.get(position).getScoreP1();
+			double pts1 = m.getScoreP1();
 			String ptz1 = pts1+"";
 			if(pts1 == (double)((int)pts1))
 			{
@@ -426,7 +443,7 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 
 			TextView p2score = (TextView)row.findViewById(R.id.score_two_round);		
 			//get and format text
-			double pts = matches.get(position).getScoreP2();
+			double pts = m.getScoreP2();
 			String ptz = pts+"";
 			if(pts == (double)((int)pts))
 			{

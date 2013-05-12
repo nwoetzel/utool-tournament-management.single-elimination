@@ -1,6 +1,8 @@
 package utool.plugin.singleelimination.test;
 
 import java.util.ArrayList;
+import java.util.List;
+
 import android.os.Handler;
 import utool.plugin.Player;
 import utool.plugin.singleelimination.Matchup;
@@ -34,6 +36,59 @@ public class TestSingleEliminationTournament extends TestCase {
 		super.setUp();
 		SingleEliminationTournament.clearInstance(tournamentId);
 	}
+	
+	public void testExpandBracket(){
+		
+		ArrayList<Player> players = createNewPlayerList(4);
+		SingleEliminationTournament set = (SingleEliminationTournament)TournamentLogic.getInstance(tournamentId, null);
+		ArrayList<Matchup> matchups = SingleEliminationTournament.generateRandomMatchups(players, set);
+		set.setPermissionLevel(Player.HOST);
+		set.setMatchups(matchups);
+		set.startTournament();
+	
+		
+		assertEquals(set.getRound(), 1);
+		
+		for(Matchup m : set.getCurrentRound()){
+			if(!m.containsPlayer(new Player(Player.BYE, "BYE"))){
+				m.setScores(2,0);
+			}
+		}
+		
+		assertEquals(set.getRound(), 2);
+		
+		set.expandBracket(new Player("new1"));
+		
+		for(Matchup m : set.getCurrentRound()){
+			if(m.getPlayerOne() != null && m.getPlayerTwo() != null && !m.containsPlayer(new Player(Player.BYE, "BYE"))){
+				m.setScores(2,0);
+			}
+		}
+		
+		assertEquals(set.getRound(), 3);
+		
+		set.expandBracket(new Player("new2"));
+		
+		for(Matchup m : set.getCurrentRound()){
+			if(!m.containsPlayer(new Player(Player.BYE, "BYE"))){
+				m.setScores(2,0);
+			}
+		}
+		
+		assertEquals(set.getRound(), 4);
+		
+		
+		
+		
+	}
+	
+	private ArrayList<Player> createNewPlayerList(int size){
+		ArrayList<Player> toReturn = new ArrayList<Player>();
+		for(int i = 1; i <= size; i++){
+			toReturn.add(new Player("Player "+i));
+		}
+		return toReturn;
+	}
 
 	/**
 	 * Tests the clearInstance and getInstance methods for SingleEliminationTournament
@@ -65,7 +120,7 @@ public class TestSingleEliminationTournament extends TestCase {
 		//		SingleEliminationTournament set = (SingleEliminationTournament) TournamentLogic.getInstance(tournamentId, theMatchups);
 
 		//The players that were in the matchups should have gotten initialized
-		ArrayList<Player> tournamentPlayers = set.getPlayers();
+		List<Player> tournamentPlayers = set.getPlayers();
 		assertEquals(tournamentPlayers.size(), 5);
 		assertTrue(tournamentPlayers.contains(one));
 		assertTrue(tournamentPlayers.contains(two));
@@ -270,7 +325,7 @@ public class TestSingleEliminationTournament extends TestCase {
 		set.setMatchups(SingleEliminationTournament.generateRandomMatchups(players, null));
 		set.setPlayers(players);
 
-		ArrayList<Player> initializedPlayers = set.getPlayers();
+		List<Player> initializedPlayers = set.getPlayers();
 
 		//Ensure that the tournament's player list is the same as the input list by checking that they have the same size,
 		//and that each player has made it into the tournament's player list

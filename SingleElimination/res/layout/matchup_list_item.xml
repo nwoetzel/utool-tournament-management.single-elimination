@@ -31,7 +31,8 @@
         android:minWidth="180px"
         android:text="TextView"
         android:textColor="@color/Black"
-        android:textSize="30px"
+        android:textSize="30px"        
+        android:singleLine="true"
         android:typeface="normal" />
 
     <TextView
@@ -46,6 +47,7 @@
         android:text="TextView"
         android:textColor="@color/Black"
         android:textSize="30px"
+        android:singleLine="true"
         android:typeface="normal" />
 
     <utool.plugin.singleelimination.ResizeTextView
@@ -71,7 +73,7 @@
         android:text="0"
         android:textColor="@color/ExpandGroupBackground"
         android:textSize="30px" />
-
+
     <TextView
         android:id="@+id/mu_li_playerThreeLabel"
         android:layout_width="wrap_content"
@@ -79,7 +81,10 @@
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:layout_marginRight="10px"
+        android:layout_toRightOf="@+id/mu_li_playerOneScore"
+        android:gravity="right"
         android:paddingRight="10dp"
+        android:singleLine="true"
         android:text="TextView"
         android:textColor="@color/ExpandGroupBackground"
         android:textSize="30px"

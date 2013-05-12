@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/help"
+        android:title="Help"
+        android:titleCondensed="Help"
+        android:showAsAction="never" android:orderInCategory="100">
+    </item>
+    <item android:id="@+id/edit" android:title="Edit" android:titleCondensed="Edit"></item>
+    <item android:id="@+id/options" android:title="Options" android:titleCondensed="Options"></item>
+    <item android:id="@+id/restart" android:title="Restart" android:titleCondensed="Restart"></item>
+    <item android:id="@+id/terminate" android:title="Terminate" android:titleCondensed="Terminate"></item>
+
+</menu>

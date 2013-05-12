@@ -162,35 +162,6 @@ public class TestMatchup extends TestCase {
 		
 	}
 	
-	public void testForfeit(){
-		
-		Player one = new Player("one");
-		Player two = new Player("two");
-		Player three = new Player("three");
-		
-		Matchup finalM = new Matchup(null, null, null, null);
-		
-		Matchup semifinalM = new Matchup(null, three, finalM, null);
-		
-		Matchup quarterfinalM = new Matchup(one, two, semifinalM, null);
-		
-		//forfeiting player one of semifinalM should cause nothing to happen yet because player two is null
-		semifinalM.playerTwoSetForfeit(true);
-		
-		assertEquals(semifinalM.getWinner(), null);
-		
-		//forfeiting this player should cause player two to go straight to final
-		quarterfinalM.playerOneSetForfeit(true);
-		
-		assertEquals(quarterfinalM.getWinner(), two);
-		
-		assertEquals(semifinalM.getWinner(), two);
-		
-		assertTrue(finalM.containsPlayer(two));
-		
-		
-	}
-	
 	public void testChildren(){
 		
 		Player one = new Player("one");

@@ -8,7 +8,6 @@ import utool.plugin.singleelimination.SingleEliminationTournament;
 import utool.plugin.singleelimination.StandingsGeneratorSE;
 import utool.plugin.singleelimination.TournamentLogic;
 import utool.plugin.singleelimination.communications.OutgoingCommandHandler;
-import utool.plugin.singleelimination.participant.SingleEliminationPartTournament;
 import junit.framework.TestCase;
 
 /**
@@ -182,7 +181,6 @@ public class TestTournamentLogic  extends TestCase
 		assertNotNull(tn.getOutgoingCommandHandler());
 		assertNotNull(tn.getStandingsGenerator());
 		assertEquals(tn.getPlayers(), playerz);
-		assertEquals(true, tn instanceof SingleEliminationPartTournament);
 	}
 
 

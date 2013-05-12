@@ -52,7 +52,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="20dip"
-                    android:text="To set scores for a matchup, click on it!"
+                    android:text="To set scores for a matchup, tap on it!"
                     android:textAppearance="?android:attr/textAppearanceSmall" />
             </LinearLayout>
 
@@ -77,7 +77,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="20dip"
-                    android:text="To move a player, long-click on the player you want to move."
+                    android:text="To move a player, long-tap on the player you want to move."
                     android:textAppearance="?android:attr/textAppearanceSmall" />
             </LinearLayout>
 
@@ -102,7 +102,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="20dip"
-                    android:text="This button at the top of the screen displays the name of the tournament.  Click on it to view the overall tournament standings, or long-click on it to open a menu with a number of options including Edit, Restart, or Terminate."
+                    android:text="This button at the top of the screen displays the name of the tournament.  Tap on it to view the overall tournament standings, or long-tap on it to open a menu with a number of options including Edit, Restart, or Terminate."
                     android:textAppearance="?android:attr/textAppearanceSmall" />
                 
                 <TextView
@@ -138,7 +138,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="20dip"
-                    android:text="This button displays the current round of the tournament.  Click on it to view the current round standings."
+                    android:text="This button displays the current round of the tournament.  Tap on it to view the current round standings."
                     android:textAppearance="?android:attr/textAppearanceSmall" />
                 
             </LinearLayout>

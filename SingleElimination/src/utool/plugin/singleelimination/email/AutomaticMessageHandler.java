@@ -1,88 +1,125 @@
 package utool.plugin.singleelimination.email;
 
 import java.util.ArrayList;
+import java.util.List;
 
+import utool.plugin.email.Contact;
 import utool.plugin.email.GMailSender;
+import utool.plugin.email.TextSender;
 import utool.plugin.singleelimination.SingleEliminationOptionsActivity;
 import utool.plugin.singleelimination.SingleEliminationTournament;
 import utool.plugin.singleelimination.TournamentLogic;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
 /**
- * Manager for the automatic Email Handling
- * Sends emails from default email of msoetablet@gmail.com
+ * Manager for the automatic message Handling
+ * Sends emails from default email of outgoingEmailAddress.
+ * MUST SET CONTEXT BEFORE USING!!!
  * @author waltzm
  * @version 1/14/2013
  */
-public class AutomaticEmailHandler 
+public class AutomaticMessageHandler 
 {
+	/**
+	 * Outgoing email address to use to send the messages
+	 */
+	private static final String OUTGOING_EMAIL_ADDRESS = "utool.update@gmail.com";
+	
+	/**
+	 * Outgoing email password to use
+	 */
+	private static final String OUTGOING_EMAIL_PASSWORD = "utooltourn1";
 	/**
 	 * Holds the list of active subscribers to the tournament
 	 */
-	private ArrayList<String> subscribers;
+	private ArrayList<Contact> subscribers;
 
 	/**
 	 * Holds the list of non-active subscribers in the tournament
 	 */
-	private ArrayList<String> possible_subscribers;
+	private ArrayList<Contact> possible_subscribers;
 
 	/**
 	 * Tournament id
 	 */
 	private long tid;
-	
+
 	/**
 	 * Log tag to be used in this class
 	 */
-	private static String logtag = "AutomaticEmailHandler";
+	private static final String LOG_TAG = "AutomaticEmailHandler";
 
+	
+	/**
+	 * Context of app
+	 */
+	private Context c;
+	
 	/**
 	 * Constructor for AutomaticEmailHandler. Links it to a tournamemt
 	 * @param tournamentId id of the tournament
 	 */
-	public AutomaticEmailHandler(long tournamentId)
+	public AutomaticMessageHandler(long tournamentId)
 	{
 		//initialize variables
 		this.tid = tournamentId;
-		subscribers = new ArrayList<String>();
-		possible_subscribers = new ArrayList<String>();
+		subscribers = new ArrayList<Contact>();
+		possible_subscribers = new ArrayList<Contact>();
 	}
 
 	/**
 	 * Updates the subscriber of the tournament state
-	 * @param address of the subscriber to update
+	 * @param contact of the subscriber to update
 	 */
-	public void updateSubscriber(String address)
+	public void updateSubscriber(final Contact contact)
 	{
 		//send notification to subscriber of setup
-		Log.d(logtag,"Updateing "+address);
-		new RetreiveFeedTask().execute(address);
+		Log.d(LOG_TAG,"Updateing "+contact.getInfo());
+		
+		if(contact.getType()==Contact.EMAIL_ADDRESS)
+		{
+			new RetreiveFeedTask().execute(contact.getInfo());
+		}
+		else
+		{
+			this.sendSMS(contact.getInfo());
+		}
 	}
 
 	/**
 	 * Getter for list of subscribers
 	 * @return cloned list of subscribers
 	 */
-	public ArrayList<String> getSubscribers()
+	public ArrayList<Contact> getSubscribers()
 	{
 		//return clone
-		ArrayList<String> subscriberst = new ArrayList<String>();
+		ArrayList<Contact> subscriberst = new ArrayList<Contact>();
 		for(int i=0;i<subscribers.size();i++)
 		{
 			subscriberst.add(subscribers.get(i));
 		}
 		return subscriberst;
 	}
+	
+	/**
+	 * setter for app context
+	 * @param c the app context
+	 */
+	public void setContext(Context c)
+	{
+		this.c=c;
+	}
 
 	/**
 	 * Getter for the list of possible subscribers
 	 * @return cloned list of subscribers
 	 */
-	public ArrayList<String> getPossibleSubscribers()
+	public ArrayList<Contact> getPossibleSubscribers()
 	{
 		//return clone
-		ArrayList<String> possible_subscriberst = new ArrayList<String>();
+		ArrayList<Contact> possible_subscriberst = new ArrayList<Contact>();
 		for(int i=0;i<possible_subscribers.size();i++)
 		{
 			possible_subscriberst.add(possible_subscribers.get(i));
@@ -93,13 +130,11 @@ public class AutomaticEmailHandler
 	/**
 	 * Setter for subscribers. If a new subscriber is in the list an initial
 	 * email will be sent to them with the current state of the tournament
+	 * Note: passed in list is cloned before getting set
 	 * @param subs list of subscribers to add
 	 */
-	public void setSubscribers(ArrayList<String> subs)
+	public void setSubscribers(List<Contact> subs)
 	{
-		Log.d(logtag,"subs: "+subs.toString());
-		Log.d(logtag,"subscr: "+subscribers.toString());
-
 		//go through calling update on new additions
 		for(int i=0;i<subs.size();i++)
 		{
@@ -109,6 +144,7 @@ public class AutomaticEmailHandler
 				if(subs.get(i).equals(subscribers.get(j)))
 				{
 					isIn = true;
+					break;
 				}
 			}
 			if(!isIn)
@@ -118,21 +154,21 @@ public class AutomaticEmailHandler
 		}
 
 		//reset to passed in
-		subscribers = new ArrayList<String>();
+		subscribers = new ArrayList<Contact>();
 		for(int i=0;i<subs.size();i++)
 		{
 			subscribers.add(subs.get(i));
 		}
 
 	}
-	
+
 	/**
 	 * Setter for the possible subscribers
 	 * @param subs the possible subscribers to add
 	 */
-	public void setPossibleSubscribers(ArrayList<String> subs)
+	public void setPossibleSubscribers(List<Contact> subs)
 	{
-		possible_subscribers = new ArrayList<String>();
+		possible_subscribers = new ArrayList<Contact>();
 		for(int i=0;i<subs.size();i++)
 		{
 			possible_subscribers.add(subs.get(i));
@@ -146,16 +182,49 @@ public class AutomaticEmailHandler
 	 */
 	public void sendOutNotifications()
 	{
-		//send new email to each subscriber
+		//send notification to each subscriber
 		for(int i=0;i<this.subscribers.size();i++)
 		{
-			new RetreiveFeedTask().execute(subscribers.get(i));
+			//if email contact
+			if(subscribers.get(i).getType() == Contact.EMAIL_ADDRESS)
+			{
+				//send new email to each email subscriber
+				//create  duplicate final to call task on
+				final String clone = subscribers.get(i).getInfo();
+
+				new RetreiveFeedTask().execute(clone);
+			}
+			else
+			{
+				//phone number
+				//send out a text to each text subscriber
+				this.sendSMS(subscribers.get(i).getInfo());
+				
+			}
 		}
 	}
 	
 	/**
+	 * ---sends an SMS message to another device---
+	 * @param phoneNumber the phone number to send the message to
+	 */
+	public void sendSMS(String phoneNumber)
+	{     
+		String message = SingleEliminationOptionsActivity.getTournamentDataPlainText(TournamentLogic.getInstance(tid));
+		try
+		{
+			TextSender.sendSMS(phoneNumber,message,c);        
+		}
+		catch(Exception e)
+		{
+			Log.e("AutomaticTextHandler","Message Failed");
+		}
+	}
+	
+
+	/**
 	 * AsyncTask for actually sending emails.
-	 * Sends from msoetablet@gmail.com
+	 * Sends from outgoingEmailAddress
 	 * @author waltzm
 	 * @version 1/14/2013
 	 */
@@ -164,15 +233,15 @@ public class AutomaticEmailHandler
 		protected String doInBackground(String... urls) {
 
 			try {   
-				GMailSender sender = new GMailSender("msoetablet@gmail.com", "msoetablet");
+				GMailSender sender = new GMailSender(OUTGOING_EMAIL_ADDRESS, OUTGOING_EMAIL_PASSWORD);
 				TournamentLogic t = TournamentLogic.getInstance(tid);
 				String subject = t.getTournamentName(false)+": Tournament Matches up to Round "+((SingleEliminationTournament)t).getRound();
 				String body = SingleEliminationOptionsActivity.getTournamentData(TournamentLogic.getInstance(tid));
 
-				sender.sendMail(subject, body, "msoetablet@gmail.com", urls[0]);   
-				Log.d(logtag, "sent");
+				sender.sendMail(subject, body, OUTGOING_EMAIL_ADDRESS, urls[0]);   
+				Log.d(LOG_TAG, "sent");
 			} catch (Exception e) {   
-				Log.e(logtag, "Error:"+e.getMessage());
+				Log.e(LOG_TAG, "Error:"+e.getMessage());
 			} 
 			return null;
 		}

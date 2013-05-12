@@ -51,7 +51,7 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 		ArrayList<Matchup> matchups = ((SingleEliminationTournament)t).getMatchups();
 		Matchup theOne = Matchup.getMatchupById(matchups, matchid);
 
-		ArrayList<Player> players = ((SingleEliminationTournament)t).getPlayers();
+		List<Player> players = ((SingleEliminationTournament)t).getPlayers();
 		Player p1 = null;
 		Player p2 = null;
 
@@ -78,7 +78,7 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 			Log.e("ICH", "error editing matchup; invalid matchup or player");
 		}
 
-		this.activity.refreshMatchupsList(null, null);
+		this.activity.refreshMatchupsList(null);
 
 	}
 
@@ -118,8 +118,11 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 		
 		//If matchup already exists, remove it here  (Will get re-added by end of method with new info)
 		Matchup toRemove = Matchup.getMatchupById(matchups, matchid);
-
+		
+		int indexOf = (matchups.isEmpty()) ? 0 : matchups.size() - 1;
+		
 		if(toRemove != null){
+			indexOf = matchups.indexOf(toRemove);
 			matchups.remove(toRemove);
 		}
 
@@ -129,7 +132,7 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 			parent = Matchup.getMatchupById(matchups, parentId);
 		}
 
-		ArrayList<Player> players = t.getPlayers();
+		List<Player> players = t.getPlayers();
 		Player p1 = null;
 		Player p2 = null;
 
@@ -159,13 +162,13 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 			Matchup newM = new Matchup(p1, p2, parent, t);
 			newM.setId(matchid);
 			newM.setRoundParticipant(round);
-			matchups.add(newM);
+			matchups.add(indexOf, newM);
 			t.setMatchups(matchups);
 		}else{
 			Log.e("ICH", "Send matchup failed - invalid player or parent");
 		}
 
-		this.activity.refreshMatchupsList(null, null);
+		this.activity.refreshMatchupsList(null);
 
 	}
 
@@ -213,7 +216,7 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 			}
 		}
 
-		activity.refreshMatchupsList(null, null);
+		activity.refreshMatchupsList(null);
 
 	}
 
@@ -255,7 +258,7 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 			theOne.setScores(Double.parseDouble(score1), Double.parseDouble(score2));
 		}		
 
-		activity.refreshMatchupsList(null, null);
+		activity.refreshMatchupsList(null);
 
 	}
 
@@ -279,7 +282,6 @@ public class IncomingCommandHandlerParticipant extends AbstractIncomingCommandHa
 		t.startTournament(); //tournament always started
 		t.getStandingsGenerator().resetScores();
 		activity.updateRoundDisplay();		
-		//clear tournament information
 
 	}
 

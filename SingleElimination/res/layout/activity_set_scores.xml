@@ -60,6 +60,7 @@
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@color/White"
         android:textSize="35px"
+        android:singleLine="true"
         android:typeface="normal" />
 
     <Button
@@ -192,6 +193,7 @@
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@color/White"
         android:textSize="35px"
+        android:singleLine="true"
         android:typeface="normal" />
 
 </RelativeLayout>

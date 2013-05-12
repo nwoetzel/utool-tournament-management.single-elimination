@@ -1,12 +1,13 @@
 package utool.plugin.singleelimination;
 
 import java.util.ArrayList;
+import java.util.List;
+
 import utool.plugin.Player;
 import utool.plugin.activity.AbstractPluginCommonActivity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -53,11 +54,6 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 	private TournamentLogic t;
 
 	/**
-	 * Shared preferences key for getting if the screen has been visited before
-	 */
-	String firstTimeKey = "utool.plugin.singleelimination.OptionsActivity";
-
-	/**
 	 * Holds the error message
 	 */
 	private String error;
@@ -75,7 +71,7 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 
 		//get list of players
 		t = TournamentLogic.getInstance(getTournamentId());
-		ArrayList<Player> players = t.getPlayers();
+		List<Player> players = t.getPlayers();
 		Log.d(logtag, "Players: "+players.toString());
 
 		//Shorten the player list to only include players with permission level of participant or moderator
@@ -112,19 +108,6 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 		findViewById(R.id.hint_2).setVisibility(FrameLayout.INVISIBLE);
 		findViewById(R.id.hint_3).setVisibility(FrameLayout.INVISIBLE);
 		findViewById(R.id.hint_4).setVisibility(FrameLayout.INVISIBLE);
-		
-		//determine if help has been played yet
-		SharedPreferences prefs = this.getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-
-		// use a default value to true (is first time)
-		Boolean firstTime= prefs.getBoolean(firstTimeKey, true); 
-		if(firstTime)
-		{
-			showHelp();
-
-			//setup preferences to remember help has been played
-			prefs.edit().putBoolean(firstTimeKey, false).commit();
-		}
 
 		//setup adapter
 		ListView l = (ListView)findViewById(R.id.option_list);
@@ -181,7 +164,7 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 				//re-send player list with updated permissions to connected devices
 				TournamentLogic t = TournamentLogic.getInstance(getTournamentId());
 
-				ArrayList<Player> p = t.getPlayers();//ad.getPlayers();
+				List<Player> p = t.getPlayers();//ad.getPlayers();
 
 				Player[] l = new Player[p.size()];
 
@@ -343,6 +326,10 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 	 */
 	public static String getTournamentData(TournamentLogic  t) 
 	{
+		if(t==null)
+		{
+			return "Tournaemnt was null";
+		}
 		Log.e(logtag,"Round: "+((SingleEliminationTournament)t).getRound());
 		String tdata = "";
 
@@ -406,6 +393,87 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 					}
 				}
 				tdata+="<br>";//extra break
+			}
+		}
+
+		return tdata;
+	}
+	
+	/**
+	 * Returns a String representation of the tournament matches with html formating
+	 * Winners will be bolded
+	 * @param t reference to the tournament
+	 * @return tournament matchups so far
+	 */
+	public static String getTournamentDataPlainText(TournamentLogic  t) 
+	{
+		if(t==null)
+		{
+			return "Tournaemnt was null";
+		}
+		Log.e(logtag,"Round: "+((SingleEliminationTournament)t).getRound());
+		String tdata = "";
+
+		if(t instanceof SingleEliminationTournament)
+		{
+			SingleEliminationTournament se = (SingleEliminationTournament)t;
+			ArrayList<Matchup> m = ((SingleEliminationTournament) t).getBottomRound();
+			if(m == null)
+			{
+				return "No Matches set";
+			}
+			//for each round
+			boolean moreRounds = true;
+			int round = 1;
+
+			while(moreRounds)
+			{
+				//Log.d(logtag,"iteration: "+round);
+				//round statement
+				tdata+="Round "+round+": \n";
+				//matchups in round
+				for(int i=0; i<m.size();i++)
+				{
+					//determine if a name should be bolded
+					if(m.get(i).getWinner()!=null)
+					{
+						//there is a winner
+						if(m.get(i).getWinner().getUUID().equals(m.get(i).getPlayerOne().getUUID()))
+						{
+							//player 1 is winner therefore bold p1
+							tdata+=m.get(i).getPlayerOne().getName()+" vs. "+m.get(i).getPlayerTwo().getName() +"\n";	
+							
+						}
+						else
+						{
+							//player 2 is winner therefore bold p2
+							tdata+=m.get(i).getPlayerOne().getName() +" vs. "+m.get(i).getPlayerTwo().getName() +"\n";	
+						}
+					}
+					else
+					{
+						//no winner
+						tdata+=m.get(i).getPlayerOne().getName() +" vs. "+m.get(i).getPlayerTwo().getName() +"\n";	
+					}
+						
+				}
+				//get next round of matchups
+				round++;
+				if(round> se.getRound())
+				{
+					//	Log.d(logtag,"no more cause of round");
+					moreRounds = false;
+				}
+				else
+				{
+					m = getNextRound(m);
+					if(m==null||m.size()<1)
+					{
+						//		Log.d(logtag,"no more cause of no parents");
+						moreRounds = false;
+					}
+				}
+				tdata+="\n";//extra break
 			}
 		}
 
@@ -483,7 +551,7 @@ public class SingleEliminationOptionsActivity extends AbstractPluginCommonActivi
 
 			@Override
 			public void run() {
-				Toast.makeText(getApplicationContext(), "Error Sending Email: "+error, Toast.LENGTH_LONG).show();
+				Toast.makeText(SingleEliminationOptionsActivity.this, "Error Sending Email: "+error, Toast.LENGTH_LONG).show();
 			}
 		});
 

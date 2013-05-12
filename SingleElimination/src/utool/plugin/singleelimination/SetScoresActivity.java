@@ -43,11 +43,6 @@ public class SetScoresActivity extends AbstractPluginCommonActivity{
 	 */
 	private TextView timerLabel;
 
-	/**
-	 * Shared preferences key for getting if the screen has been visited before
-	 */
-	String firstTimeKey = "utool.plugin.singleelimination.SetScores";
-
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
 	{
@@ -60,17 +55,6 @@ public class SetScoresActivity extends AbstractPluginCommonActivity{
 		TextView titleLabel = (TextView) findViewById(R.id.title);
 		titleLabel.setText("Single Elimination");
 
-		SharedPreferences prefs = this.getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-		// use a default value to true (is first time)
-		Boolean firstTime= prefs.getBoolean(firstTimeKey, true); 
-		if(firstTime)
-		{
-			showHelp();
-
-			//setup preferences to remember help has been played
-			prefs.edit().putBoolean(firstTimeKey, false).commit();
-		}
-
 		//Initialize the associated tournament and matchup of this scores dialog
 		tournament = (SingleEliminationTournament)TournamentLogic.getInstance(getTournamentId());
 		long mid = getIntent().getExtras().getLong("matchup_id");
@@ -82,7 +66,7 @@ public class SetScoresActivity extends AbstractPluginCommonActivity{
 
 		//Set timer label
 		timerLabel = (TextView) findViewById(R.id.timerLabel);
-		timerLabel.setText("~");
+		timerLabel.setText(""); //TODO get infinity symbol
 		tournament.addTimerDisplay(timerLabel);
 
 		//Set player one label and portrait

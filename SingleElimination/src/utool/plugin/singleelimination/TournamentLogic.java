@@ -2,12 +2,12 @@ package utool.plugin.singleelimination;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import utool.plugin.Player;
 import utool.plugin.singleelimination.communications.CoreSEBridge;
 import utool.plugin.singleelimination.communications.OutgoingCommandHandler;
-import utool.plugin.singleelimination.email.AutomaticEmailHandler;
-import utool.plugin.singleelimination.participant.SingleEliminationPartTournament;
+import utool.plugin.singleelimination.email.AutomaticMessageHandler;
 
 /**
  * Abstract class that defines a tournament
@@ -32,7 +32,7 @@ public abstract class TournamentLogic
 	/**
 	 * Holds a reference to teh tournament's email handler
 	 */
-	private AutomaticEmailHandler emailHandler;
+	private AutomaticMessageHandler emailHandler;
 
 	/**
 	 * Used to send messages to the core through the main activity registered
@@ -57,7 +57,7 @@ public abstract class TournamentLogic
 	/**
 	 * List of players in the tournament
 	 */
-	protected ArrayList<Player> players;
+	protected List<Player> players;
 
 
 	/**
@@ -92,7 +92,7 @@ public abstract class TournamentLogic
 	/**
 	 * @return ArrayList of Players in the tournament
 	 */
-	public ArrayList<Player> getPlayers(){
+	public List<Player> getPlayers(){
 		return players;
 	}
 
@@ -123,11 +123,11 @@ public abstract class TournamentLogic
 	 * Get the tournament's email handler 
 	 * @return Instance of an email handler
 	 */
-	public AutomaticEmailHandler getAutomaticEmailHandler(){
+	public AutomaticMessageHandler getAutomaticMessageHandler(){
 		if (emailHandler == null){
 			synchronized (this) {
 				if (emailHandler == null){
-					emailHandler = new AutomaticEmailHandler(tournamentId);
+					emailHandler = new AutomaticMessageHandler(tournamentId);
 				}
 			}
 		}
@@ -197,7 +197,7 @@ public abstract class TournamentLogic
 	 * @param permissionLevel the level of permission of the participant
 	 * @return the singleton instance of this tournament or NULL if no players or matchups are provided and the instance has not been created yet.
 	 */
-	public static  TournamentLogic getInstance(long tournamentId, ArrayList<Player> players, ArrayList<Matchup> matchups, int permissionLevel)
+	public static  TournamentLogic getInstance(long tournamentId, List<Player> players, ArrayList<Matchup> matchups, int permissionLevel)
 	{
 		TournamentLogic tournament = tournamentInstances.get(tournamentId);
 

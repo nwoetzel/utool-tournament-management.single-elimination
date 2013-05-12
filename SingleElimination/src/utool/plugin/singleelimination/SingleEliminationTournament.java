@@ -1,6 +1,7 @@
 package utool.plugin.singleelimination;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.TimerTask;
 
@@ -34,6 +35,11 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * Indicates player confirmed no timer
 	 */
 	public static final int CONFIRMED_NO_TIMER = -2;
+	
+	/**
+	 * Counter used for generating unique matchup IDs.
+	 */
+	private static int matchIdCounter = 0;
 
 	/**
 	 * The score given to a player who wins by default (bye round or forfeit)
@@ -54,6 +60,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * The seconds left in the current round
 	 */
 	private int remainingSeconds;
+	
 	/**
 	 * The handler to be notified when round timer is updated.  Is passed in when round timer is set
 	 */
@@ -89,7 +96,6 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 */
 	private ArrayList<TextView> timerDisplays;
 
-
 	/**
 	 * Constructor
 	 * Note: all matchups passed in will have their tournament set to this tournament
@@ -101,8 +107,21 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * @param matchups  the initial matchups of the tournament (can be modified but not manually added/removed after creation)
 	 */
 	protected SingleEliminationTournament(long tournamentId, ArrayList<Matchup> matchups){
-		players = new ArrayList<Player>();
-		this.tournamentId = tournamentId;  
+		this(tournamentId, null, matchups);
+	}
+
+	/**
+	 * Constructor
+	 * Note: all matchups passed in will have their tournament set to this tournament
+	 * 
+	 * @param tournamentId The tournament id all the way from the Core
+	 * @param players the players of the tournament (can be added/removed after construction
+	 * @param matchups the initial matchups of the tournament (can be modified but not manually added/removed after creation)
+	 */
+	protected SingleEliminationTournament(long tournamentId, List<Player> players, ArrayList<Matchup> matchups){
+		this.tournamentId = tournamentId;
+		this.players = (players != null) ? players : new ArrayList<Player>();
+		
 
 		if(matchups != null){
 			this.matchups = matchups;
@@ -132,59 +151,8 @@ public class SingleEliminationTournament extends TournamentLogic{
 		defaultWin = DEFAULT_DEFAULT_WIN;
 
 		timerDisplays = new ArrayList<TextView>();
-	}
-
-
-	/**
-	 * Constructor
-	 * Note: all matchups passed in will have their tournament set to this tournament
-	 * 
-	 * @param tournamentId The tournament id all the way from the Core
-	 * @param players the players of the tournament (can be added/removed after construction
-	 * @param matchups the initial matchups of the tournament (can be modified but not manually added/removed after creation)
-	 */
-	protected SingleEliminationTournament(long tournamentId, ArrayList<Player> players, ArrayList<Matchup> matchups){
-		this.tournamentId = tournamentId;
-
-		if(players != null){
-			this.players = players;
-		}else{
-			this.players = new ArrayList<Player>();
-		}
-
-		if(matchups != null){
-
-			for(Matchup m : matchups){
-				m.setTournament(this);
-			}               
-
-			this.matchups = matchups;
-
-			//If any players in the matchups are not in the players list, add them now.  Also, setTournament for each matchup
-			for(Matchup m : matchups){
-				if(m.getPlayerOne() != null && !players.contains(m.getPlayerOne())&&(!m.getPlayerOne().getUUID().equals(Player.BYE))){
-					players.add(m.getPlayerOne());                          
-				}
-				if(m.getPlayerTwo() !=null && !players.contains(m.getPlayerTwo())&&(!m.getPlayerTwo().getUUID().equals(Player.BYE))){
-					players.add(m.getPlayerTwo());
-				}
-
-				m.setTournament(this);
-			}
-
-		}else{
-			this.matchups = new ArrayList<Matchup>(); 
-		}
-
-		started = false;
-		finished = false;
-		round = 0;
-
-		//set round timer to default (no timer) and default win points to default (2)
-		roundDuration = DEFAULT_NO_TIMER;
-		defaultWin = DEFAULT_DEFAULT_WIN;
-
-		timerDisplays = new ArrayList<TextView>();
+		
+		matchIdCounter = 0;
 	}
 	
 	/**
@@ -226,7 +194,6 @@ public class SingleEliminationTournament extends TournamentLogic{
 			
 			this.roundDuration = roundDuration;
 			this.timerHandler = timerHandler;
-
 		}
 	}
 
@@ -275,8 +242,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * Add player to the tournament.
 	 * @param player The player to add
 	 */
-	public void addPlayer(Player player)
-	{
+	public void addPlayer(Player player){
 
 		if(!players.contains(player)&&(!player.getUUID().equals(Player.BYE)))
 		{
@@ -313,11 +279,8 @@ public class SingleEliminationTournament extends TournamentLogic{
 
 				//now that new matchups are created, push the request again
 				addPlayer(player);
-
 			}
-
 		}
-
 	}
 
 
@@ -349,11 +312,8 @@ public class SingleEliminationTournament extends TournamentLogic{
 				}else{
 					//do nothing if matchup is finished and in 2nd or later round
 				}
-
 			}
-
 		}
-
 	}
 
 
@@ -377,7 +337,6 @@ public class SingleEliminationTournament extends TournamentLogic{
 			if(two != null && !this.players.contains(two)&&(!two.getUUID().equals(Player.BYE))){
 				this.players.add(two);
 			}
-
 		}
 	}
 
@@ -389,7 +348,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 		round++;
 
 		//send out email notifications
-		this.getAutomaticEmailHandler().sendOutNotifications();
+		this.getAutomaticMessageHandler().sendOutNotifications();
 
 		//reset round timer
 		remainingSeconds = roundDuration;
@@ -437,31 +396,16 @@ public class SingleEliminationTournament extends TournamentLogic{
 		ArrayList<Matchup> toReturn = new ArrayList<Matchup>();
 
 		if(!matchups.isEmpty()){
-
-			double doubleRounds = Math.log10(matchups.size()) / Math.log10(2);
-			int numRounds;
-
-			//truncate double to int. if not an exact number, add one to ensure enough rounds
-			if(doubleRounds % 1 != 0){
-				numRounds = (int)doubleRounds;
-				numRounds ++;
-			}else{
-				numRounds = (int)doubleRounds;
-			}
-
-			//make sure num rounds is at least 1.  if tournament started with 2 players, 0 will result
-			if(numRounds == 0){
-				numRounds = 1;
-			}
-
+			
 			Matchup finalMatchup = null;
-			int fCtr = 0;
-			while(finalMatchup == null && fCtr < matchups.size()){
-				if(matchups.get(fCtr).getParent() == null){
-					finalMatchup = matchups.get(fCtr);
+			for(Matchup m : matchups){
+				if(m.getParent() == null){
+					finalMatchup = m;
+					break;
 				}
-				fCtr++;
 			}
+			
+			int numRounds = finalMatchup.getRound();
 
 			ArrayList<Matchup> parents = new ArrayList<Matchup>();
 			parents.add(finalMatchup);
@@ -488,16 +432,11 @@ public class SingleEliminationTournament extends TournamentLogic{
 							}
 						}				
 					}
-
 					parents = nextParents;
 				}
-
 				toReturn = parents;		
-
 			}
-
 		}
-
 		return toReturn;
 	}
 
@@ -506,10 +445,12 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * @return matchups of current round
 	 */
 	public ArrayList<Matchup> getCurrentRound(){
-		ArrayList<Matchup> m = getRound(round);
-		for(Matchup mp : getRoundParticipant(round)){
-			if(!m.contains(mp)){
-				m.add(mp);
+		ArrayList<Matchup> m = getRoundParticipant(round);
+		if(getPermissionLevel() == Player.HOST){
+			for(Matchup mp : getRound(round)){
+				if(!m.contains(mp)){
+					m.add(mp);
+				}
 			}
 		}
 		return m;
@@ -535,9 +476,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 
 			//start round timer (does nothing if roundTimer is null)
 			startRoundTimer();
-
 		}
-
 	}
 
 
@@ -645,13 +584,9 @@ public class SingleEliminationTournament extends TournamentLogic{
 								//Should never happen
 								throw new RuntimeException("Player Removed from Tournament Standings Generator, was still in a Matchup that got a score recorded");
 							}			
-
 						}
-
 					}
-
 				}
-
 				advanceRound();
 			}
 		}
@@ -663,28 +598,19 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * @param p
 	 */
 	public void expandBracket(Player p){
-
-		//determine current number of rounds in tournament
-		double doubleRounds = Math.log10(matchups.size()) / Math.log10(2);
-		int numRounds;
-
-		//truncate double to int. if not an exact number, add one to ensure enough rounds
-		if(doubleRounds % 1 != 0){
-			numRounds = (int)doubleRounds;
-			numRounds ++;
-		}else{
-			numRounds = (int)doubleRounds;
+		
+		Matchup oldFinal = null;
+		for(Matchup m : matchups){
+			if(m.getParent() == null){
+				oldFinal = m;
+				break;
+			}
 		}
-
-		if(numRounds == 0){
-			numRounds = 1;
-		}
+		
+		int numRounds = Math.max(oldFinal.getRound(), oldFinal.getRoundParticipant());
 		
 		//Save newMatchups to send to participants at end of method
 		ArrayList<Matchup> newMatchups = new ArrayList<Matchup>();
-
-		//retrieve final round which only contains one matchup - the final round
-		Matchup oldFinal = getRound(numRounds).get(0);
 
 		Matchup newFinal = new Matchup(null, this);
 		newFinal.setRoundParticipant(numRounds+1);
@@ -702,6 +628,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 		}else{
 
 			Matchup parent = new Matchup(newFinal, this);
+			parent.setRoundParticipant(numRounds);
 			matchups.add(parent);
 			newMatchups.add(parent);
 
@@ -785,7 +712,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 * @param tournament the tournament the matchups should be assigned to.  It's ok for this to be null
 	 * @return arraylist of Matchups made from the players given.
 	 */
-	public  static ArrayList<Matchup> generateRandomMatchups(ArrayList<Player> players, SingleEliminationTournament tournament){
+	public  static ArrayList<Matchup> generateRandomMatchups(List<Player> players, SingleEliminationTournament tournament){
 
 		if(players != null){
 
@@ -909,7 +836,6 @@ public class SingleEliminationTournament extends TournamentLogic{
 		}else{
 			return null;
 		}
-
 	}
 
 	/**
@@ -951,7 +877,6 @@ public class SingleEliminationTournament extends TournamentLogic{
 		}
 
 		return true;
-
 	}
 
 
@@ -960,6 +885,14 @@ public class SingleEliminationTournament extends TournamentLogic{
 	 */
 	public ArrayList<Matchup> getMatchups(){
 		return matchups;
+	}
+	
+	/**
+	 * Expected to be called by matchup ctor; used so that a unique match id is used for each match in a tournament.
+	 * @return id
+	 */
+	protected int getNextMatchId(){
+		return matchIdCounter++;
 	}
 
 	/**
@@ -1020,9 +953,7 @@ public class SingleEliminationTournament extends TournamentLogic{
 		
 		if(getPermissionLevel() == Player.HOST){
 			this.getOutgoingCommandHandler().handleSendBeginNewRound(tournamentId, -1);
-		}
-		
-		
+		}		
 	}
 
 	/**

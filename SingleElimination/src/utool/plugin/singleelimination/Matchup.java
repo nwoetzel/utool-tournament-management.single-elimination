@@ -16,24 +16,24 @@ import utool.plugin.Player;
 public class Matchup {
 
 	/**
-	 * Used to designate a forfeiture when setting scores.  
-	 * Expected use: setScores(0, FORFEIT) which will set winner to player one
-	 * 
-	 * Note: Use of SingleEliminationTournament.DEFAULT_WIN may cause forfeit to not be used.
+	 * Signifies null parent... TODO I don't think this is used
 	 */
-	public static final double FORFEIT = -1;
-
 	public static final long NULL_PARENT = -1;
+	
+	/**
+	 * Index of left child in parent's children list, if it exists
+	 */
+	public static final int LEFT_CHILD = 0;
+	
+	/**
+	 * Index of right child in parent's children list, if it exists
+	 */
+	public static final int RIGHT_CHILD = 1;
 
 	/**
 	 * The tournament this matchup belongs to
 	 */
 	private SingleEliminationTournament tournament; //needed to access round of tournament by matchups
-
-	/**
-	 * Counter used for generating matchup IDs.
-	 */
-	private static long idCounter = 0;
 
 	/**
 	 * Winner of the matchup
@@ -56,24 +56,13 @@ public class Matchup {
 	private Player playerTwo;
 
 	/**
-	 * Flag that indicates if player one forfeited while player two was null.  This causes player two to automatically win when they are added to this match
-	 */
-	private boolean playerOneForfeit;
-
-	/**
-	 * Flag that indicates if player one forfeited while player two was null.  This causes player two to automatically win when they are added to this match
-	 */
-	private boolean playerTwoForfeit;
-
-	/**
 	 * The next matchup in the tournament; the winner of this matchup gets sent to the parent matchup.
 	 */
 	private Matchup parent;
 
 	/**
 	 * Matchups who have this matchup as a parent  
-	 * TODO since there would ever only be two children, it is possible that there could instead be leftChild/rightChild 
-	 * and binary tree operations could be performed for matchups.  However I haven't figured out how to incorporate this yet.
+	 * TODO since there would ever only be two children, it is possible that there could instead be leftChild/rightChild attributes instead of a list
 	 */
 	private ArrayList<Matchup> children;
 
@@ -84,6 +73,7 @@ public class Matchup {
 
 	/**
 	 * Used for the participant to know what round the matchup belongs to, since it does not have access to the parent
+	 * -5 is arbitrary value meant to show that it is un-set
 	 */
 	private int round = -5;
 
@@ -103,15 +93,11 @@ public class Matchup {
 
 		children = new ArrayList<Matchup>();
 
-		idCounter++;
-		this.id = idCounter;
+		this.id = tournament.getNextMatchId();
 
 		if(parent != null){
 			parent.addChild(this);
 		}
-
-		playerOneForfeit = false;
-		playerTwoForfeit = false;
 	}
 
 	/**
@@ -121,21 +107,7 @@ public class Matchup {
 	 * @param tournament the tournament this matchup is part of.  It can be null
 	 */
 	public Matchup(Player one, Matchup parent, SingleEliminationTournament tournament){
-		this.playerOne = one;
-		this.parent = parent;
-		this.tournament = tournament;
-
-		children = new ArrayList<Matchup>();
-
-		idCounter++;
-		this.id = idCounter;
-
-		if(parent != null){
-			parent.addChild(this);
-		}
-
-		playerOneForfeit = false;
-		playerTwoForfeit = false;
+		this(one, null, parent, tournament);
 	}
 
 	/**
@@ -145,20 +117,7 @@ public class Matchup {
 	 */	
 	public Matchup(Matchup parent, SingleEliminationTournament tournament)
 	{
-		this.parent = parent;
-		this.tournament= tournament;
-
-		children = new ArrayList<Matchup>();
-
-		idCounter++;
-		this.id = idCounter;
-
-		if(parent != null){
-			parent.addChild(this);
-		}
-
-		playerOneForfeit = false;
-		playerTwoForfeit = false;
+		this(null, null, parent, tournament);
 	}
 
 	/**
@@ -188,6 +147,10 @@ public class Matchup {
 		children.remove(m);
 	}
 
+	/**
+	 * Sets the children attribute
+	 * @param children
+	 */
 	public void setChildren(ArrayList<Matchup> children){
 		this.children = children;
 	}
@@ -199,10 +162,17 @@ public class Matchup {
 		return children;
 	}
 
+	/**
+	 * Sets the round attribute
+	 * @param round
+	 */
 	public void setRoundParticipant(int round){
 		this.round = round;
 	}
 
+	/**
+	 * @return round attribute
+	 */
 	public int getRoundParticipant(){
 		return round;
 	}
@@ -214,7 +184,6 @@ public class Matchup {
 	 * @return true if winner set, false if scores already set
 	 */
 	private boolean setWinner(Player p){
-
 
 		if(tournament.getPermissionLevel() != Player.HOST){
 			winner = p;
@@ -233,7 +202,14 @@ public class Matchup {
 				winner = p;
 
 				if(parent != null){
-					parent.addPlayer(p); //winner progresses to next round
+					
+					//Winner progresses to next round.  Add to appropriate slot depending on which child this matchup is.
+					if(parent.getChildren().get(LEFT_CHILD).equals(this)){
+						parent.addPlayerOne(p);
+					}else{ //.get(RIGHT_CHILD).equals(this)
+						parent.addPlayerTwo(p);
+					}
+					
 				}else{
 					//if parent is null, that means winner is set for final round and tournament is done.
 					tournament.endTournament();
@@ -252,81 +228,135 @@ public class Matchup {
 		}
 
 	}
+	
+	/**
+	 * Try adding a player to player one slot
+	 * @param p player to add
+	 * @return true if player was added, false if could not be added (already a player in player one spot)
+	 */	
+	public boolean addPlayerOne(Player p){
+		if(playerOne != null) return false;
+		
+		playerOne = p;
+		
+		//Update participants
+		int round;
+		//send matchup
+		if(tournament==null){
+			round = 1;
+		}
+		else{
+			round = tournament.getRound()+1;
+		}
+		String p1="null";
+		String p2="null";
+		if(playerOne!=null){
+			p1 = playerOne.getUUID().toString();
+		}
+		if(playerTwo!=null){
+			p2 = playerTwo.getUUID().toString();
+		}
+		String[] t1 = {p1};
+		String[] t2 = {p2};
+
+		if(tournament != null){
+
+			long parentId = NULL_PARENT;
+			if(parent != null){
+				parentId = parent.getId();
+			}
+
+			try{
+				tournament.getOutgoingCommandHandler().handleSendMatchup(tournament.getTournamentId(), id, parentId, null, null, t1, t2, round, "Table 1");
+			}catch(NullPointerException e){
+				//This exception if thrown if message is sent before miCore is initialized.  Ignore because it will get sent again when requested
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Try adding a player to player two slot
+	 * @param p player to add
+	 * @return true if player was added. false if it could not be (already a player in player two slot)
+	 */
+	public boolean addPlayerTwo(Player p){
+		if(playerTwo != null) return false;
+		
+		playerTwo = p;
+		//Update participants
+		int round;
+		//send matchup
+		if(tournament==null){
+			round = 1;
+		}
+		else{
+			round = tournament.getRound()+1;
+		}
+		String p1="null";
+		String p2="null";
+		if(playerOne!=null){
+			p1 = playerOne.getUUID().toString();
+		}
+		if(playerTwo!=null){
+			p2 = playerTwo.getUUID().toString();
+		}
+		String[] t1 = {p1};
+		String[] t2 = {p2};
+
+		if(tournament != null){
+
+			long parentId = NULL_PARENT;
+			if(parent != null){
+				parentId = parent.getId();
+			}
+
+			try{
+				tournament.getOutgoingCommandHandler().handleSendMatchup(tournament.getTournamentId(), id, parentId, null, null, t1, t2, round, "Table 1");
+			}catch(NullPointerException e){
+				//This exception if thrown if message is sent before miCore is initialized.  Ignore because it will get sent again when requested
+			}
+		}
+		return true;				
+	}
 
 
 
 	/**
-	 * Adds player to matchup if possible.
+	 * Adds player to matchup to first open slot if possible.
 	 * @param p the player to add
 	 * @return true if player added, false if matchup already full or already contains p
 	 */
 	public boolean addPlayer(Player p){
 		
-		boolean toReturn = false;
-		
-		if(playerOne == null){
-			playerOne = p;
-
-			//if existing opponent has forfeited, automatically advance
-			if(playerTwoForfeit){
-				setScores(0, FORFEIT);
-			}
-
-			toReturn = true;
-		}else if(playerTwo == null && !playerOne.equals(p)){
-			playerTwo = p;
-
-			//if existing opponent has forfeited, automatically advance
-			if(playerOneForfeit){
-				setScores(FORFEIT, 0);
-			}
-
-			toReturn = true;
-		}else{
-			toReturn = false; //cant add player if already two players are in matchup
-		}	
-		
-		//If a player was added, send the updated matchup to participants
-		if(toReturn){
-			int round;
-			//send matchup TODO something doesnt work here on first add
-			if(tournament==null)
-			{
-				round = 1;
-			}
-			else 
-			{
-				round = tournament.getRound()+1;
-			}
-			String p1="null";
-			String p2="null";
-			if(playerOne!=null)
-			{
-				p1 = playerOne.getUUID().toString();
-			}
-			if(playerTwo!=null)
-			{
-				p2 = playerTwo.getUUID().toString();
-			}
-			String[] t1 = {p1};
-			String[] t2 = {p2};
-
-			if(tournament != null){
-
-				long parentId = NULL_PARENT;
-				if(parent != null){
-					parentId = parent.getId();
-				}
-
-				try{
-					tournament.getOutgoingCommandHandler().handleSendMatchup(tournament.getTournamentId(), id, parentId, null, null, t1, t2, round, "Table 1");
-				}catch(NullPointerException e){
-					//This exception if thrown if message is sent before miCore is initialized.  Ignore because it will get sent again when requested
-				}
-			}
+		boolean toReturn = addPlayerOne(p);
+		if(!toReturn){
+			toReturn = addPlayerTwo(p);
 		}
-		
 		return toReturn;
+		
+//		if(playerOne == null){
+//			playerOne = p;
+//
+//			//if existing opponent has forfeited, automatically advance
+//			if(playerTwoForfeit){
+//				setScores(0, FORFEIT);
+//			}
+//
+//			toReturn = true;
+//		}else if(playerTwo == null && !playerOne.equals(p)){
+//			playerTwo = p;
+//
+//			//if existing opponent has forfeited, automatically advance
+//			if(playerOneForfeit){
+//				setScores(FORFEIT, 0);
+//			}
+//
+//			toReturn = true;
+//		}else{
+//			toReturn = false; //cant add player if already two players are in matchup
+//		}	
+		
 		
 	}
 
@@ -356,8 +386,11 @@ public class Matchup {
 		Player toReturn = playerOne;
 		playerOne = p;
 
-		String[] team1 = {p.getUUID().toString()};
-		String[] team2 = {playerTwo.getUUID().toString()};
+		String[] team1 = {"null"};
+		String[] team2 = {"null"};
+		
+		if(playerOne != null) team1[0] = playerOne.getUUID().toString();		
+		if(playerTwo != null) team2[0] = playerTwo.getUUID().toString();
 
 		//notify outgoing command handler of changed matchup
 		tournament.outgoingCommandHandler.handleChangeMatchup(tournament.getTournamentId(), id, null, null, team1, team2, tournament.getRound(), null);
@@ -374,8 +407,11 @@ public class Matchup {
 		Player toReturn = playerTwo;
 		playerTwo = p;
 
-		String[] team1 = {playerOne.getUUID().toString()};
-		String[] team2 = {p.getUUID().toString()};
+		String[] team1 = {"null"};
+		String[] team2 = {"null"};
+		
+		if(playerOne != null) team1[0] = playerOne.getUUID().toString();		
+		if(playerTwo != null) team2[0] = playerTwo.getUUID().toString();
 
 		//notify outgoing command handler of changed matchup
 		tournament.outgoingCommandHandler.handleChangeMatchup(tournament.getTournamentId(), id, null, null, team1, team2, tournament.getRound(), null);
@@ -394,25 +430,12 @@ public class Matchup {
 		Player toReturn = null;
 
 		if(playerOne != null && playerOne.equals(oldP)){
-			toReturn = playerOne;
-			playerOne = newP;
+			toReturn = swapPlayerOne(newP);
 		}else if(playerTwo != null && playerTwo.equals(oldP)){
-			toReturn = playerTwo;
-			playerTwo = newP;
+			toReturn = swapPlayerTwo(newP);
 		}
-
-		if(toReturn != null){
-
-			String[] team1 = {playerOne.getUUID().toString()};
-			String[] team2 = {playerTwo.getUUID().toString()};
-
-			//notify outgoing command handler of changed matchup
-			tournament.outgoingCommandHandler.handleChangeMatchup(tournament.getTournamentId(), id, null, null, team1, team2, tournament.getRound(), null);
-
-		}
-
+		
 		return toReturn;
-
 	}
 
 	/**
@@ -439,7 +462,7 @@ public class Matchup {
 		scores[0] = playerOneScore;
 		scores[1] = playerTwoScore;	
 
-		//Notify standings generator of result.  TODO does standings generator handle ties?
+		//Notify standings generator of result.
 		if(tournament != null){
 
 			//Set UUIDs to the players' UUIDs or Bye constant if null
@@ -454,16 +477,13 @@ public class Matchup {
 			}
 
 
-			try {
-				
+			try {				
 				//only notify generator once - from host side
 				if(tournament.getPermissionLevel() == Player.HOST){
 					tournament.getStandingsGenerator().recordScore(uuidOne, uuidTwo, tournament.getRound(), scores[0], scores[1], id);
-				}
-				
+				}				
 			} catch (PlayerNotExistantException e)
 			{
-
 				//Should never happen
 				throw new RuntimeException("Player Removed from Tournament Standings Generator, was still in a Matchup that got a score recorded.\n"+e.getMessage());
 			}
@@ -563,55 +583,28 @@ public class Matchup {
 	}
 
 	/**
-	 * Return the round of the tournament this matchup belongs to.  Equal to the depth of the children of the matchup.
+	 * Return the round of the tournament this matchup belongs to.  Equal to the depth of the children of the matchup,
+	 * or the round attribute if it has been set.
 	 * @return round of the tournament this matchup belongs to
 	 */
 	public int getRound(){
-
-		int toReturn = 1;
-
-		ArrayList<Matchup> nextChildren = children;		
-
-		while(!nextChildren.isEmpty()){
-			toReturn++;
-			nextChildren = nextChildren.get(0).getChildren();
-		}
-
-		return toReturn;
+		return Math.max(round, getRoundRecursive(this));
 	}
-
+	
 	/**
-	 * @return playerOneForfeit
+	 * Helper method which determines the round the given matchup belongs to by finding the depth of its children
+	 * @param m the matchup
+	 * @return the round m belongs to
 	 */
-	public boolean oneForfeited(){
-		return playerOneForfeit;
-	}
-
-	/**
-	 * @return playerTwoForfeit
-	 */
-	public boolean twoForfeited(){
-		return playerTwoForfeit;
-	}
-
-	/**
-	 * @param forfeit sets playerOneForfeit
-	 */
-	public void playerOneSetForfeit(boolean forfeit){
-		playerOneForfeit = forfeit;
-		if(playerTwo != null){
-			setScores(FORFEIT, 0);
-		}
-	}
-
-	/**
-	 * @param forfeit sets playerTwoForfeit
-	 */
-	public void playerTwoSetForfeit(boolean forfeit){
-		playerTwoForfeit = forfeit;
-		if(playerOne != null){
-			setScores(0, FORFEIT);
-		}
+	private static int getRoundRecursive(Matchup m){
+		
+		ArrayList<Matchup> children = m.getChildren();
+		Matchup left = (children.size() >= 1) ? children.get(0) : null;
+		Matchup right = (children.size() == 2) ? children.get(1) : null;
+		
+		if(left == null) return 1;
+		if(right == null) return getRoundRecursive(left);
+		else return 1 + Math.max(getRoundRecursive(left), getRoundRecursive(right));	
 	}
 
 	/**
@@ -619,7 +612,6 @@ public class Matchup {
 	 * @return true if parent set successfully
 	 */
 	public boolean setParent(Matchup m){
-
 		if(parent == null){
 			parent = m;
 			parent.addChild(this);
@@ -654,11 +646,7 @@ public class Matchup {
 	 * @return true if this matchup's id is equal to m's id
 	 */
 	public boolean equals(Matchup m){
-		if(this.id == m.getId()){
-			return true;
-		}else{
-			return false;
-		}
+		return this.id == m.getId();
 	}
 
 	/**

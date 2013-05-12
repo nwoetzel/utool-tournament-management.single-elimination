@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:text="Tournament Name"
         android:textSize="35px"
+        android:singleLine="true"
         android:typeface="normal" />
 
     <LinearLayout
@@ -55,7 +56,7 @@
         android:layout_below="@+id/mu_roundButtonsLayout" >
 
     </ListView>
-
+
     <RelativeLayout
         android:id="@+id/frameLayout_matchups"
         android:layout_width="fill_parent"

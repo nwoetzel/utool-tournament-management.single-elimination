@@ -1,6 +1,7 @@
 package utool.plugin.singleelimination.communications;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import android.util.Log;
@@ -70,16 +71,13 @@ public class IncomingCommandHandlerHost extends AbstractIncomingCommandHandler
 		oc.handleSendClear(id);
 
 		//re-send players
-		ArrayList<Player> p = t.getPlayers();
+		List<Player> p = t.getPlayers();
 
 		Player[] players = p.toArray(new Player[p.size()]); 
 
 		oc.handleSendPlayers(id, players);
 
-		//re-send matches with round breaks
-		//		ArrayList<Matchup> matches = t.getBottomRound();
-		//		Log.e("matches", matches.toString());
-		//Send all matches and set round
+		//Send all matches
 		sendAllMatches(id, oc);
 
 
@@ -232,25 +230,12 @@ public class IncomingCommandHandlerHost extends AbstractIncomingCommandHandler
 		if(m != null){
 			m.setScores(score1d, score2d);
 		}
-		
-		//report score in tournament and update self.. is done from m.setScores method
-//		try 
-//		{
-//			t.getStandingsGenerator().recordScore(UUID.fromString(player1), UUID.fromString(player2), round,  score1d,  score2d, matchid);
-//		} 
-//		catch (PlayerNotExistantException e) 
-//		{
-//			//don't record the score since invalid
-//			Log.e("Incoming Command Handler", "Moderator recorded a score with an invalid player id");
-//			return;
-//		}
 
 		//send score to all players
-		t.getOutgoingCommandHandler().handleSendScore(id, matchid, player1, player2, score1d,  score2d, round);
+//		t.getOutgoingCommandHandler().handleSendScore(id, matchid, player1, player2, score1d,  score2d, round);
 
 		//update GUI
-		activity.refreshMatchupsList(null,  null);
-		activity.updateRoundDisplay();
+		activity.refreshMatchupsList(null);
 	}
 
 	@Override

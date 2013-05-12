@@ -1,11 +1,14 @@
 package utool.plugin.singleelimination;
 
 import java.util.ArrayList;
-import java.util.StringTokenizer;
-
+import java.util.List;
+import utool.plugin.activity.AbstractPluginCommonActivity;
+import utool.plugin.email.Contact;
+import utool.plugin.email.ContactDAO;
+import utool.plugin.singleelimination.email.AutomaticMessageHandler;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.database.SQLException;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -15,46 +18,36 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RadioGroup;
 import android.widget.TextView;
-import utool.plugin.activity.AbstractPluginCommonActivity;
-import utool.plugin.singleelimination.R;
-import utool.plugin.singleelimination.email.AutomaticEmailHandler;
 
 /**
  * Activity for handling the setting up of subscriber emails.
- * @author waltzm
- * @version 1/14/2013
+ * @author waltzm and kreierj
+ * @version 4/20/2013
  */
 public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 {
-	
-	/**
-	 * Log tag to be used in this class
-	 */
-	private static String logtag = "SE Advanced Email Options";
-	
 	/**
 	 * Holds the arrayAdapter
 	 */
 	private AdvancedOptionsAdapter ad;
 
 	/**
-	 * Shared preferences key for getting if the screen has been visited before
+	 * holds access to the database
 	 */
-	String firstTimeKey = "utool.plugin.singleelimination.SEAdvancedOptionsActivity";
+	private ContactDAO dao;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -62,41 +55,30 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		super.onCreate(savedInstanceState);
 
 		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
-		setContentView(R.layout.se_options_email_advanced);
+		setContentView(R.layout.se_options_email_tab);
 		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.window_title);
-
 		TextView titleLabel = (TextView) findViewById(R.id.title);
 		titleLabel.setText("Single Elimination");
 
-		//hide help menus
-		//setup dialogs
-		findViewById(R.id.hint1).setVisibility(FrameLayout.INVISIBLE);
-		findViewById(R.id.hint2).setVisibility(FrameLayout.INVISIBLE);
-		findViewById(R.id.hint3).setVisibility(FrameLayout.INVISIBLE);
-		findViewById(R.id.hint4).setVisibility(FrameLayout.INVISIBLE);
-		findViewById(R.id.hint5).setVisibility(FrameLayout.INVISIBLE);
+		//create dao
+		dao = new ContactDAO(this);
 
 		//setup adapter
-		AutomaticEmailHandler a = TournamentLogic.getInstance(getTournamentId()).getAutomaticEmailHandler();
-		ArrayList<String> emails = a.getSubscribers();
-		int size = emails.size();
-		emails.addAll(a.getPossibleSubscribers());
+		AutomaticMessageHandler a =TournamentLogic.getInstance(getTournamentId()).getAutomaticMessageHandler();
+		a.setContext(this);
+		ArrayList<Contact> contacts = a.getSubscribers();
+		int size = contacts.size();
+		contacts.addAll(a.getPossibleSubscribers());
 
 		ListView l = (ListView)findViewById(R.id.email_subscribers);
-		ad=new AdvancedOptionsAdapter(this, R.id.email_subscribers, emails);
+		ad=new AdvancedOptionsAdapter(this, R.id.email_subscribers, contacts);
 		l.setAdapter(ad);
 
-		//load email addresses from preferences and add to list if unique
-		SharedPreferences prefs = getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-		String em= prefs.getString("email_addresses", ""); 
-		StringTokenizer e = new StringTokenizer(em, ",");
-		while(e.hasMoreTokens())
-		{
-			addPossibleSubscriber(emails, e.nextToken());
-		}
+		this.loadContactsDatabase(contacts);
 
+		//create array of isChecked
 		ArrayList<Boolean> ton = new ArrayList<Boolean>();
-		for(int i=0;i<emails.size();i++)
+		for(int i=0;i<contacts.size();i++)
 		{
 			if(i<size)
 			{
@@ -111,16 +93,43 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		ad.notifyDataSetChanged();
 
 		//setup add button
-		ImageButton plus = (ImageButton)findViewById(R.id.email_plus);
+		View plus = findViewById(R.id.email_plus);
 		plus.setOnClickListener(new OnClickListener(){
 
 			@Override
 			public void onClick(View arg0) 
 			{
 				EditText ea = (EditText)findViewById(R.id.email_address);
+				String contact = ea.getText().toString();
 
-				//add typed in email to list
-				ad.add(ea.getText().toString());
+				//error checking
+				if(contact.equals(""))
+				{
+					//misclick, do not save
+					return;
+				}
+
+
+				Contact c;
+				//if 9 numbers, then phone number
+				try
+				{
+					//if contact can be parsed to number, is phone
+					Long.parseLong(contact);
+					c = new Contact(contact, Contact.PHONE_NUMBER);
+					Log.d("OptionsEmailTab","Added a phone number");
+				}
+				catch(NumberFormatException e)
+				{
+					//else email
+					c=new Contact(contact, Contact.EMAIL_ADDRESS);
+					Log.d("OptionsEmailTab","Added an email address");
+				}
+
+				//clear editText
+				ea.setText("");
+				//add typed in contact to list
+				ad.add(c);
 				ad.notifyDataSetChanged();
 				reloadUI();
 
@@ -128,66 +137,96 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 
 		});
 
-		//setup save button
-		Button save = (Button)findViewById(R.id.adv_save);
-		save.setOnClickListener(new OnClickListener(){
+		reloadUI();
 
-			@Override
-			public void onClick(View arg0) 
+	}
+
+	@Override
+	public void onPause()
+	{
+		super.onPause();
+
+		//save settings to tournament's email object and exit
+		AutomaticMessageHandler a =TournamentLogic.getInstance(getTournamentId()).getAutomaticMessageHandler();
+		ArrayList<Contact> subs = new ArrayList<Contact>();
+		ArrayList<Contact> psubs = new ArrayList<Contact>();
+		ArrayList<Contact> emails = ad.addresses;
+		ArrayList<Boolean> on = ad.turnedOn;
+		for(int i=0;i<emails.size();i++)
+		{
+			if(on.get(i))
 			{
-				//save settings to tournament's email object and exit
-				AutomaticEmailHandler a = TournamentLogic.getInstance(getTournamentId()).getAutomaticEmailHandler();
-				ArrayList<String> subs = new ArrayList<String>();
-				ArrayList<String> psubs = new ArrayList<String>();
-				ArrayList<String> emails = ad.addresses;
-				ArrayList<Boolean> on = ad.turnedOn;
-				for(int i=0;i<emails.size();i++)
-				{
-					if(on.get(i))
-					{
-						//add to subscriber since checked
-						subs.add(emails.get(i));
-					}
-					else
-					{
-						//add to possible subscriber since unchecked
-						psubs.add(emails.get(i));
-					}
-				}
+				//add to subscriber since checked
+				subs.add(emails.get(i));
+			}
+			else
+			{
+				//add to possible subscriber since unchecked
+				psubs.add(emails.get(i));
+			}
+		}
 
-				//Log.e(logtag, subs);
-				a.setSubscribers(subs);
-				a.setPossibleSubscribers(psubs);
+		//Log.e(logtag, subs);
+		a.setSubscribers(subs);
+		a.setPossibleSubscribers(psubs);
 
-				String ems = "";
-				for(int i=0;i<subs.size();i++)
-				{
-					ems+=subs.get(i)+",";
-				}
-				for(int i=0;i<psubs.size();i++)
-				{
-					ems+=psubs.get(i)+",";
-				}
+		this.saveContactsDatabase(emails);
+	}
 
-				//save list to preferences
-				SharedPreferences prefs = getSharedPreferences("utool.plugin.singleelimination", Context.MODE_PRIVATE);
-				prefs.edit().putString("email_addresses", ems).commit();
-				finish();
+	/**
+	 * Loads the contacts from db into contacts
+	 * @param contacts the list of contacts
+	 */
+	private void loadContactsDatabase(ArrayList<Contact> contacts) 
+	{
+		try{
+			//open connection
+			dao.open();
+
+			//load contacts from database and add to list if unique
+			List<Contact> dbc= dao.getContactListArray();
+
+			//only add unique ones
+			for(int i=0;i<dbc.size();i++)
+			{
+				addPossibleSubscriber(contacts, dbc.get(i));
 			}
 
-		});
-
-		// use a default value to true (is first time)
-		Boolean firstTime= prefs.getBoolean(firstTimeKey, true); 
-		if(firstTime)
-		{
-			//setup preferences to remember help has been played
-			prefs.edit().putBoolean(firstTimeKey, false).commit();
+		} catch (SQLException e){
+			Log.e("SQLException", "Could not open or read from the database", e);
+		} finally{
+			try{
+				//close connection
+				dao.close();
+			} catch (Exception e){
+				//ignore, we wanted it closed... it closed
+			}
 		}
 
 
-		reloadUI();
 
+	}
+	/**
+	 * Saves the email list and the phone number list to db
+	 * @param list the list of contacts
+	 */
+	private void saveContactsDatabase(List<Contact> list) 
+	{
+		try{
+			//open connection
+			dao.open();
+
+			dao.putContactList(list);
+		} catch(SQLException e){
+
+		} finally {
+			try{
+				//close connection
+				dao.close();
+			} catch (Exception e){
+				//ignore, we wanted it closed... it closed
+			}
+		}
 	}
 
 	/**
@@ -198,6 +237,18 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		ListView l = (ListView)findViewById(R.id.email_subscribers);
 		l.setOnCreateContextMenuListener(this);
 		registerForContextMenu(l);
+
+		//if none in list, hide the pictures
+		if(ad.addresses.size()==0)
+		{
+			findViewById(R.id.imageView3).setVisibility(ImageView.INVISIBLE);
+			findViewById(R.id.imageView1).setVisibility(ImageView.INVISIBLE);
+		}
+		else
+		{
+			findViewById(R.id.imageView3).setVisibility(ImageView.VISIBLE);
+			findViewById(R.id.imageView1).setVisibility(ImageView.VISIBLE);
+		}
 	}
 
 
@@ -206,7 +257,6 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		super.onCreateContextMenu(menu, v, menuInfo);
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.activity_email_options_context_menu, menu);
-		Log.d(logtag,"Inflating Menu");
 	}
 
 
@@ -218,28 +268,31 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 			ad.addresses.remove(info.position);
 			ad.turnedOn.remove(info.position);
 			ad.notifyDataSetChanged();
+			reloadUI();
 			return true;
 		}
 		return super.onContextItemSelected(item);
 	}
 
 	/**
-	 * Adds nextToken to list if not already in emails
+	 * Adds nextToken to list if not already in list of emails
 	 * @param emails list of addresses
 	 * @param nextToken email to add if unique
+	 * @return true if added, false if not added
 	 */
-	public void addPossibleSubscriber(ArrayList<String> emails, String nextToken) 
+	public boolean addPossibleSubscriber(ArrayList<Contact> emails, Contact nextToken) 
 	{
 		for(int i=0;i<emails.size();i++)
 		{
 			if(emails.get(i).equals(nextToken))
 			{
-				return;
+				return false;
 			}
 		}
 
 		//not in list
 		emails.add(nextToken);
+		return true;
 	}
 
 
@@ -249,12 +302,12 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 	 * @author waltzm
 	 * @version 12/11/2012
 	 */
-	private class AdvancedOptionsAdapter extends ArrayAdapter<String>{
+	private class AdvancedOptionsAdapter extends ArrayAdapter<Contact>{
 
 		/**
 		 * Holds the list of players
 		 */
-		private ArrayList<String> addresses;
+		private ArrayList<Contact> addresses;
 
 		/**
 		 * Holds whether addresses are subscribed
@@ -267,7 +320,7 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		 * @param textViewResourceId the list id
 		 * @param addresses list of addresses
 		 */
-		public AdvancedOptionsAdapter(Context context, int textViewResourceId, ArrayList<String> addresses)
+		public AdvancedOptionsAdapter(Context context, int textViewResourceId, ArrayList<Contact> addresses)
 		{
 			super(context, textViewResourceId, addresses);
 			this.addresses = addresses;
@@ -281,11 +334,24 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent){
 			LayoutInflater inflater = getLayoutInflater();
-			View row = inflater.inflate(R.layout.se_options_email_row, parent, false);
+			View row = inflater.inflate(R.layout.se_adv_options_email_row, parent, false);
 
 			//add address
 			TextView adr = (TextView)row.findViewById(R.id.adv_address);
-			adr.setText(addresses.get(position));
+			adr.setText(addresses.get(position).getInfo());
+			RadioGroup rg = (RadioGroup)row.findViewById(R.id.options_radiogroup);
+			rg.setOnCheckedChangeListener(new OnCheckChangedRadioButton(position));
+
+			if(addresses.get(position).getType()==Contact.EMAIL_ADDRESS)
+			{
+				rg.check(R.id.email_radiobutton);
+				Log.d("Email Tab", "selecting email");
+			}
+			else
+			{
+				rg.check(R.id.phone_radiobutton);
+				Log.d("Email Tab", "selecting phone");
+			}
 
 			CheckBox box = (CheckBox)row.findViewById(R.id.checkBox1);
 			box.setOnCheckedChangeListener(new OnCheckChangedListener_AdvancedOptions(position));
@@ -299,14 +365,12 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 				box.setChecked(false);
 			}
 
-
-
 			row.invalidate();
 			return row;
 		}
 
 		@Override
-		public void add(String item)
+		public void add(Contact item)
 		{
 			addresses.add(item);
 			turnedOn.add(true);
@@ -322,8 +386,57 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 			turnedOn.set(position,state);
 		}
 
+		/**
+		 * CHange the type at position
+		 * @param position the position in addresses
+		 * @param type the type
+		 */
+		public void changeType(int position, int type) {
+			addresses.get(position).setType(type);
+
+		}
+
 	}
 
+
+	/**
+	 * Custom listener to update the type of the item
+	 * If checked the player is set to Moderator, otherwise it is set to Participant
+	 * @author waltzm
+	 *
+	 */
+	private class OnCheckChangedRadioButton implements RadioGroup.OnCheckedChangeListener
+	{
+		/**
+		 * Holds the position
+		 */
+		private int position;
+
+		/**
+		 * Constructor that accepts the position for the checkbox.
+		 * @param position the position
+		 */
+		public OnCheckChangedRadioButton(int position)
+		{
+			this.position = position;
+		}
+
+		@Override
+		public void onCheckedChanged(RadioGroup rg, int  checkedId) 
+		{
+			if(checkedId == R.id.email_radiobutton)
+			{
+				ad.changeType(position, Contact.EMAIL_ADDRESS);
+				ad.notifyDataSetChanged();
+			}
+			else
+			{
+				ad.changeType(position, Contact.PHONE_NUMBER);
+				ad.notifyDataSetChanged();
+			}
+		}
+
+	}
 
 	/**
 	 * Custom listener to update the player based on if the check box is checked
@@ -331,7 +444,7 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 	 * @author waltzm
 	 *
 	 */
-	private class OnCheckChangedListener_AdvancedOptions implements OnCheckedChangeListener
+	private class OnCheckChangedListener_AdvancedOptions implements CompoundButton.OnCheckedChangeListener
 	{
 		/**
 		 * Holds the position
@@ -355,20 +468,23 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 	}
 
 	/**
-	 * Displays the help screen
+	 * Displays the help messages for the user
 	 */
-	public void showHelp(){
+	private void setupHelp() 
+	{
+		// Create and show the help dialog.
 		final Dialog dialog = new Dialog(SEAdvancedEmailOptions.this);
-		dialog.setContentView(R.layout.options_help);
-		dialog.setTitle("Options Help");
+		dialog.setContentView(R.layout.se_options_email_help);
+		dialog.setTitle("UTooL Single Elimination Help");
 		dialog.setCancelable(true);
-		Button closeButton = (Button) dialog.findViewById(R.id.home_help_close_button);
+		Button closeButton = (Button) dialog.findViewById(R.id.help_close_button);
 		closeButton.setOnClickListener(new Button.OnClickListener() {      
 			public void onClick(View view) { 
 				dialog.dismiss();     
 			}
 		});
 		dialog.show();
+
 	}
 
 	@Override
@@ -383,7 +499,7 @@ public class SEAdvancedEmailOptions extends AbstractPluginCommonActivity
 		// Handle item selection
 		switch (item.getItemId()) {
 		case R.id.help:
-			showHelp();
+			this.setupHelp();
 		default:
 			return super.onOptionsItemSelected(item);
 		}

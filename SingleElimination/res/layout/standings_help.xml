@@ -53,7 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="20dip"
-                    android:text="Click on any of the column headers (Rank, W, L, or S) to order the players by that parameter."
+                    android:text="Tap on any of the column headers (Rank, W, L, or S) to order the players by that parameter."
                     android:textAppearance="?android:attr/textAppearanceSmall" />
 
             </LinearLayout>

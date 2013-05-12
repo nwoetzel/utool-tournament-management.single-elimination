@@ -3,6 +3,7 @@ package utool.plugin.singleelimination.test;
 import java.util.ArrayList;
 
 import utool.plugin.Player;
+import utool.plugin.email.Contact;
 import utool.plugin.singleelimination.Matchup;
 import utool.plugin.singleelimination.SEAdvancedEmailOptions;
 import utool.plugin.singleelimination.SingleEliminationTournament;
@@ -112,20 +113,20 @@ public class TestAdvancedSEOptions extends ActivityUnitTestCase<SEAdvancedEmailO
 		assertNotNull(mActivity);
 		
 		//Test adding one not in list
-		ArrayList<String> em = new ArrayList<String>();
-		em.add("emailaddress1");
-		em.add("emailaddress2");
-		em.add("emailaddress3");
-		mActivity.addPossibleSubscriber(em, "emailaddress4");
+		ArrayList<Contact> em = new ArrayList<Contact>();
+		em.add(new Contact("emailaddress1", Contact.EMAIL_ADDRESS));
+		em.add(new Contact("emailaddress2", Contact.EMAIL_ADDRESS));
+		em.add(new Contact("emailaddress3", Contact.PHONE_NUMBER));
+		mActivity.addPossibleSubscriber(em, (new Contact("emailaddress4", Contact.EMAIL_ADDRESS)));
 		
 		assertEquals(em.size(), 4);
-		assertEquals(em.get(3),"emailaddress4");
+		assertEquals(em.get(3).getInfo(),"emailaddress4");
 		
 		
 		//Test adding one in list
-		mActivity.addPossibleSubscriber(em, "emailaddress4");	
+		mActivity.addPossibleSubscriber(em,(new Contact("emailaddress4", Contact.EMAIL_ADDRESS)));	
 		assertEquals(em.size(), 4);
-		assertEquals(em.get(3),"emailaddress4");
+		assertEquals(em.get(3).getInfo(),"emailaddress4");
 	}
 
 }
