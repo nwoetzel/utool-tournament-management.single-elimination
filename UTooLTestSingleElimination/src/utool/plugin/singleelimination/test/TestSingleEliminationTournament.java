@@ -24,11 +24,6 @@ public class TestSingleEliminationTournament extends TestCase {
 	 */
 	private long tournamentId = 0;
 
-	/**
-	 * used by testRoundTimer to check if handler was fired
-	 */
-	private static boolean timerHandled = false;
-
 	//This method is invoked before every test
 	@Override
 	protected void setUp() throws Exception
