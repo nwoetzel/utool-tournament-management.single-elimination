@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import utool.plugin.Player;
 import utool.plugin.singleelimination.SingleEliminationTournament;
-import utool.plugin.singleelimination.TournamentLogic;
 
 import android.util.Log;
 

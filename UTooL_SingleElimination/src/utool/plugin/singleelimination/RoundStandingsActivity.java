@@ -217,32 +217,6 @@ public class RoundStandingsActivity extends AbstractPluginCommonActivity
 	}
 
 	/**
-	 * Adds the given matchup to the list of matches if it is
-	 * not already in the list
-	 * @param matches the list of matches
-	 * @param matchup the single matchup to add
-	 * @return the new list of matches
-	 */
-	private ArrayList<Matchup> addParent(ArrayList<Matchup> matches, Matchup matchup)
-	{
-		if(matchup==null)
-		{
-			return matches;
-		}
-		for(int i=0;i<matches.size();i++)
-		{
-			if(matches.get(i).getId()==matchup.getId())
-			{
-				//don't add since in there already
-				return matches;
-			}
-		}
-		//not in list so add
-		matches.add(matchup);
-		return matches;
-	}
-	
-	/**
 	 * Displays the help screen
 	 */
 	public void showHelp(){

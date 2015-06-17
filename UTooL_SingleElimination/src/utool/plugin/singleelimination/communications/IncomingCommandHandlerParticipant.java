@@ -5,13 +5,11 @@ import java.util.List;
 import java.util.UUID;
 
 import android.util.Log;
-import android.widget.TextView;
 import utool.plugin.Player;
 import utool.plugin.singleelimination.Matchup;
 import utool.plugin.singleelimination.MatchupsActivity;
 import utool.plugin.singleelimination.PlayerNotExistantException;
 import utool.plugin.singleelimination.SingleEliminationTournament;
-import utool.plugin.singleelimination.TournamentLogic;
 
 /**
  * When a message is received from the host, the message will be parsed and then will call the IncomingCommandHandler? method corresponding to 

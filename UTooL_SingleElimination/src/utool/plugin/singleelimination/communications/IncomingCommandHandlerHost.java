@@ -2,13 +2,11 @@ package utool.plugin.singleelimination.communications;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import android.util.Log;
 import utool.plugin.Player;
 import utool.plugin.singleelimination.Matchup;
 import utool.plugin.singleelimination.MatchupsActivity;
-import utool.plugin.singleelimination.PlayerNotExistantException;
 import utool.plugin.singleelimination.SingleEliminationTournament;
 
 /**
